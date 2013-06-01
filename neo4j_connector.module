@@ -1,0 +1,228 @@
+<?php
+
+require_once __DIR__ . '/vendor/autoload.php';
+
+use Everyman\Neo4j\Client;
+use Everyman\Neo4j\Index\NodeIndex;
+use Everyman\Neo4j\Node;
+
+function neo4j_connector_init() {
+}
+
+function neo4j_connector_menu() {
+  return array(
+    'node/%node/graph' => array(
+      'type' => MENU_LOCAL_TASK,
+      'title' => 'Graph info',
+      'page callback' => 'neo4j_connector_node_graph_info_page',
+      'page arguments' => array(1),
+      'file' => 'neo4j_connector.pages.inc',
+      'access callback' => TRUE,
+    ),
+  );
+}
+
+function neo4j_connector_node_insert($node) {
+  Neo4JDrupal::sharedInstance()->addEntity($node, 'node');
+}
+
+function neo4j_connector_node_delete($node) {
+  Neo4JDrupal::sharedInstance()->deleteEntity($node, 'node');
+}
+
+class Neo4JDrupal {
+
+  public $client;
+
+  public $entityIDIndex;
+
+  public function __construct() {
+    $this->client = new Client();
+
+    $this->entityIDIndex = new NodeIndex($this->client, 'nid');
+    $this->entityIDIndex->save();
+  }
+
+  public static function sharedInstance() {
+    static $instance = NULL;
+    if (!$instance) {
+      $instance = new Neo4JDrupal();
+    }
+
+    return $instance;
+  }
+
+  /**
+   * @param $entity_type
+   * @param $entity
+   */
+  public function addEntity($entity, $entity_type = 'node') {
+    list($id, $rid, $bundle) = entity_extract_ids($entity_type, $entity);
+    $node = $this->client->makeNode(array(
+      'title' => $entity->title,
+      'entity_id' => $id,
+      'rid' => $rid,
+      'entity_type' => $entity_type,
+      'bundle' => $bundle,
+    ));
+    $node->save();
+    $this->entityIDIndex->add($node, 'entity_id', $id);
+    watchdog(__FUNCTION__, 'Graph node has been created: @eid -> @nid', array('@eid' => $id, '@nid' => $node->getId()));
+
+    $field_instances = field_info_instances($entity_type, $bundle);
+    foreach ($field_instances as $field_instance) {
+      if ($neo4jFieldHandler = Neo4JDrupalFieldHandlerFactory::getInstance($field_instance['widget']['module'], $node)) {
+        $neo4jFieldHandler->processFieldData($entity, $entity_type, $field_instance['field_name']);
+      }
+    }
+  }
+
+  /**
+   * @param $entity_type
+   * @param $entity
+   */
+  public function deleteEntity($entity, $entity_type = 'node') {
+    $propCont = $this->getNodeOfEntity($entity, $entity_type);
+    if ($propCont) {
+      $node = $this->client->getNode($propCont->getId());
+
+      $relationships = $node->getRelationships();
+      foreach ($relationships as $relationship) {
+        $relationship->delete();
+      }
+
+      $this->entityIDIndex->remove($node);
+      $node->delete();
+      watchdog(__FUNCTION__, 'Graph node has been deleted: @nid', array('@nid' => $node->getId()));
+    }
+  }
+
+  /**
+   * @param $entity_type
+   * @param $entity
+   * @return \Everyman\Neo4j\PropertyContainer
+   */
+  public function getNodeOfEntity($entity, $entity_type = 'node') {
+    list($id,,) = entity_extract_ids($entity_type, $entity);
+    return $this->getNodeByEntityID($id);
+  }
+
+  /**
+   * @param $entity_id
+   * @return \Everyman\Neo4j\PropertyContainer
+   */
+  public function getNodeByEntityID($entity_id) {
+    // @todo use entity_type
+    return $this->entityIDIndex->findOne('entity_id', $entity_id);
+  }
+
+}
+
+class Neo4JDrupalFieldHandlerFactory {
+
+  /**
+   * @param array $field_instance
+   * @return Neo4JDrupalAbstractFieldHandler
+   */
+  public static function getInstance($module_name, Node $node) {
+    switch ($module_name) {
+
+      case 'entityreference':
+        return new Neo4JDrupalEntityreferenceFieldHandler($node);
+
+      case 'text':
+        return new Neo4JDrupalTextFieldHandler($node);
+
+      case 'number':
+        return new Neo4JDrupalNumberFieldHandler($node);
+
+      case 'taxonomy':
+        return new Neo4JDrupalTaxonomyFieldHandler($node);
+
+    }
+
+    return null;
+  }
+
+}
+
+abstract class Neo4JDrupalAbstractFieldHandler {
+
+  protected $node;
+
+  public function __construct(Node $node) {
+    $this->node = $node;
+  }
+
+  public function processFieldData($entity, $entity_type, $field_name) {
+    $items = field_get_items($entity_type, $entity, $field_name);
+
+    foreach ($items as $item) {
+      $this->processFieldItem($item);
+    }
+  }
+
+  public abstract function processFieldItem(array $item);
+
+}
+
+class Neo4JDrupalEntityreferenceFieldHandler extends Neo4JDrupalAbstractFieldHandler {
+
+  public static $REFERENCES = 'REFERENCES';
+
+  public function processFieldItem(array $item) {
+    $referencedNode = $this->getNodeByEntityID($item['target_id']);
+    if ($referencedNode) {
+      $this->node->relateTo($referencedNode, self::$REFERENCES)->save();
+    }
+  }
+
+}
+
+class Neo4JDrupalTextFieldHandler extends Neo4JDrupalAbstractFieldHandler {
+
+  public static $HAS_TEXT = 'HAS_TEXT';
+
+  public function processFieldItem(array $item) {
+    $textNode = Neo4JDrupal::sharedInstance()->client->makeNode(array(
+      'title' => $item['value'],
+      'type' => 'textfield',
+    ));
+    $textNode->save();
+    $this->node->relateTo($textNode, self::$HAS_TEXT)->save();
+  }
+
+}
+
+class Neo4JDrupalNumberFieldHandler extends Neo4JDrupalAbstractFieldHandler {
+
+  public static $HAS_NUMBER = 'HAS_NUMBER';
+
+  public function processFieldItem(array $item) {
+    $numberNode = Neo4JDrupal::sharedInstance()->client->makeNode(array(
+      'title' => $item['value'],
+      'type' => 'numberfield',
+    ));
+    $numberNode->save();
+    $this->node->relateTo($numberNode, self::$HAS_NUMBER)->save();
+  }
+
+}
+
+class Neo4JDrupalTaxonomyFieldHandler extends Neo4JDrupalAbstractFieldHandler {
+
+  public static $HAS_TERM = 'HAS_TERM';
+
+  public function processFieldItem(array $item) {
+    $term = taxonomy_term_load($item['tid']);
+
+    $termNode = Neo4JDrupal::sharedInstance()->client->makeNode(array(
+      'title' => $term->name,
+      'id' => $term->tid,
+      'type' => 'taxonomy_term',
+    ));
+    $termNode->save();
+    $this->node->relateTo($termNode, self::$HAS_TERM)->save();
+  }
+
+}
