@@ -2,6 +2,9 @@
 
 require_once __DIR__ . '/vendor/autoload.php';
 
+define('NEO4J_CONNECTOR_ENTITY_INDEX', 'entity_index');
+define('NEO4J_CONNECTOR_TERM_INDEX', 'term_index');
+
 use Everyman\Neo4j\Client;
 use Everyman\Neo4j\Index\NodeIndex;
 use Everyman\Neo4j\Node;
@@ -34,13 +37,8 @@ class Neo4JDrupal {
 
   public $client;
 
-  public $entityIDIndex;
-
   public function __construct() {
     $this->client = new Client();
-
-    $this->entityIDIndex = new NodeIndex($this->client, 'nid');
-    $this->entityIDIndex->save();
   }
 
   public static function sharedInstance() {
@@ -50,6 +48,21 @@ class Neo4JDrupal {
     }
 
     return $instance;
+  }
+
+  /**
+   * @param $index_name
+   * @return NodeIndex
+   */
+  public function getIndex($index_name) {
+    static $indexes = array();
+
+    if (!$indexes[$index_name]) {
+      $indexes[$index_name] = new NodeIndex($this->client, $index_name);
+      $indexes[$index_name]->save();
+    }
+
+    return $indexes[$index_name];
   }
 
   /**
@@ -66,7 +79,7 @@ class Neo4JDrupal {
       'bundle' => $bundle,
     ));
     $node->save();
-    $this->entityIDIndex->add($node, 'entity_id', $id);
+    $this->getIndex(NEO4J_CONNECTOR_ENTITY_INDEX)->add($node, 'entity_id', $id);
     watchdog(__FUNCTION__, 'Graph node has been created: @eid -> @nid', array('@eid' => $id, '@nid' => $node->getId()));
 
     $field_instances = field_info_instances($entity_type, $bundle);
@@ -91,7 +104,7 @@ class Neo4JDrupal {
         $relationship->delete();
       }
 
-      $this->entityIDIndex->remove($node);
+      $this->getIndex(NEO4J_CONNECTOR_ENTITY_INDEX)->remove($node);
       $node->delete();
       watchdog(__FUNCTION__, 'Graph node has been deleted: @nid', array('@nid' => $node->getId()));
     }
@@ -113,7 +126,7 @@ class Neo4JDrupal {
    */
   public function getNodeByEntityID($entity_id) {
     // @todo use entity_type
-    return $this->entityIDIndex->findOne('entity_id', $entity_id);
+    return $this->getIndex(NEO4J_CONNECTOR_ENTITY_INDEX)->findOne('entity_id', $entity_id);
   }
 
 }
@@ -171,7 +184,7 @@ class Neo4JDrupalEntityreferenceFieldHandler extends Neo4JDrupalAbstractFieldHan
   public static $REFERENCES = 'REFERENCES';
 
   public function processFieldItem(array $item) {
-    $referencedNode = $this->getNodeByEntityID($item['target_id']);
+    $referencedNode = Neo4JDrupal::sharedInstance()->getNodeByEntityID($item['target_id']);
     if ($referencedNode) {
       $this->node->relateTo($referencedNode, self::$REFERENCES)->save();
     }
@@ -216,12 +229,18 @@ class Neo4JDrupalTaxonomyFieldHandler extends Neo4JDrupalAbstractFieldHandler {
   public function processFieldItem(array $item) {
     $term = taxonomy_term_load($item['tid']);
 
-    $termNode = Neo4JDrupal::sharedInstance()->client->makeNode(array(
-      'title' => $term->name,
-      'id' => $term->tid,
-      'type' => 'taxonomy_term',
-    ));
-    $termNode->save();
+    $termNode = Neo4JDrupal::sharedInstance()->getIndex(NEO4J_CONNECTOR_TERM_INDEX)->findOne('id', $term->tid);
+
+    if (!$termNode) {
+      $termNode = Neo4JDrupal::sharedInstance()->client->makeNode(array(
+        'title' => $term->name,
+        'id' => $term->tid,
+        'type' => 'taxonomy_term',
+      ));
+      $termNode->save();
+      Neo4JDrupal::sharedInstance()->getIndex(NEO4J_CONNECTOR_TERM_INDEX)->add($termNode, 'id', $term->tid);
+    }
+
     $this->node->relateTo($termNode, self::$HAS_TERM)->save();
   }
 
