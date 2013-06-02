@@ -8,6 +8,7 @@ define('NEO4J_CONNECTOR_TERM_INDEX', 'term_index');
 use Everyman\Neo4j\Client;
 use Everyman\Neo4j\Index\NodeIndex;
 use Everyman\Neo4j\Node;
+use Everyman\Neo4j\Cypher\Query;
 
 function neo4j_connector_init() {
 }
@@ -19,6 +20,12 @@ function neo4j_connector_menu() {
       'title' => 'Graph info',
       'page callback' => 'neo4j_connector_node_graph_info_page',
       'page arguments' => array(1),
+      'file' => 'neo4j_connector.pages.inc',
+      'access callback' => TRUE,
+    ),
+    'neo4j/console' => array(
+      'title' => 'Neo4J db console',
+      'page callback' => 'neo4j_connector_console_page',
       'file' => 'neo4j_connector.pages.inc',
       'access callback' => TRUE,
     ),
@@ -63,6 +70,15 @@ class Neo4JDrupal {
     }
 
     return $indexes[$index_name];
+  }
+
+  /**
+   * @param $query
+   * @return \Everyman\Neo4j\Query\ResultSet
+   */
+  public function query($template, $vars = array()) {
+    $query = new Everyman\Neo4j\Cypher\Query($this->client, $template, $vars);
+    return $query->getResultSet();
   }
 
   /**
