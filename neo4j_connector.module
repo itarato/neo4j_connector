@@ -57,7 +57,7 @@ class Neo4JDrupal {
   public function getIndex($index_name) {
     static $indexes = array();
 
-    if (!$indexes[$index_name]) {
+    if (!isset($indexes[$index_name])) {
       $indexes[$index_name] = new NodeIndex($this->client, $index_name);
       $indexes[$index_name]->save();
     }

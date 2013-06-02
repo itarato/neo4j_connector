@@ -15,5 +15,7 @@ function neo4j_connector_node_graph_info_page($node) {
   $data_browser_link = 'http://localhost:7474/webadmin/#/data/search/' . $propCont->getId() . '/';
   $info[] = t('Data browser link') . ': ' . l($data_browser_link, $data_browser_link);
 
+  $info[] = '<pre>start n=node:entity_index(entity_id="' . $node->nid . '") return n;</pre>';
+
   return theme('item_list', array('items' => $info));
 }
