@@ -25,17 +25,43 @@ function neo4j_connector_menu() {
 }
 
 function neo4j_connector_node_insert($node) {
-  Neo4JDrupal::sharedInstance()->addEntity($node, 'node');
+  $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX, 'entity_id', $node->nid);
+  Neo4JDrupal::sharedInstance()->addEntity($node, 'node', neo4j_connector_properties_of_node($node), $indexParam);
 }
 
 function neo4j_connector_node_delete($node) {
-  Neo4JDrupal::sharedInstance()->deleteEntity($node, 'node');
+  $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX, 'entity_id', $node->nid);
+  Neo4JDrupal::sharedInstance()->deleteEntity($node, 'node', $indexParam);
 }
 
 function neo4j_connector_node_update($node) {
-  Neo4JDrupal::sharedInstance()->updateEntity($node, 'node');
+  $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX, 'entity_id', $node->nid);
+  Neo4JDrupal::sharedInstance()->updateEntity($node, 'node', neo4j_connector_properties_of_node($node), $indexParam);
+}
+
+function neo4j_connector_user_insert(&$edit, $account, $category) {
+  $indexParam = new Neo4JDrupalIndexParam('user_index', 'user_id', $account->uid);
+  Neo4JDrupal::sharedInstance()->addEntity($account, 'user', neo4j_connector_properties_of_user($account), $indexParam);
+}
+
+function neo4j_connector_properties_of_user($account) {
+  return array(
+    'name' => $account->name,
+    'mail' => $account->mail,
+    'entity_id' => $account->uid,
+    'entity_type' => 'user',
+  );
+}
+
+function neo4j_connector_properties_of_node($node) {
+  return array(
+    'title' => $node->title,
+    'entity_id' => $node->nid,
+    'entity_type' => 'node',
+    'bundle' => $node->type,
+  );
 }
 
 function neo4j_connector_cron() {
-  // @todo delete single (not entity) entries.
+  // @todo delete single (non-entity) entries.
 }

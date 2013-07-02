@@ -51,76 +51,82 @@ class Neo4JDrupal {
   }
 
   /**
-   * @param $entity_type
    * @param $entity
+   * @param string $entity_type
+   * @param array $properties
+   * @param Neo4JDrupalIndexParam $indexParam
    */
-  public function addEntity($entity, $entity_type = 'node') {
-    list($id, $rid, $bundle) = entity_extract_ids($entity_type, $entity);
-    $node = $this->client->makeNode(array(
-      'title' => $entity->title,
-      'entity_id' => $id,
-      'rid' => $rid,
-      'entity_type' => $entity_type,
-      'bundle' => $bundle,
-    ));
-    $node->save();
-    $this->getIndex(NEO4J_CONNECTOR_ENTITY_INDEX)->add($node, 'entity_id', $id);
-    watchdog(__FUNCTION__, 'Graph node has been created: @eid -> @nid', array('@eid' => $id, '@nid' => $node->getId()));
-
-    $field_instances = field_info_instances($entity_type, $bundle);
-    foreach ($field_instances as $field_instance) {
-      if ($neo4jFieldHandler = Neo4JDrupalFieldHandlerFactory::getInstance($field_instance['widget']['module'], $node)) {
-        $neo4jFieldHandler->processFieldData($entity, $entity_type, $field_instance['field_name']);
-      }
-    }
+  public function addEntity($entity, $entity_type = 'node', array $properties, Neo4JDrupalIndexParam $indexParam = NULL) {
+    $node = $this->addGraphNode($properties, $indexParam);
+    $this->addEntityFields($entity, $entity_type, $node);
+    return $node;
   }
 
   /**
-   * @param $entity_type
-   * @param $entity
+   * @param array $properties
+   * @param Neo4JDrupalIndexParam $indexParam
+   * @return Node
    */
-  public function deleteEntity($entity, $entity_type = 'node') {
-    $propCont = $this->getNodeOfEntity($entity, $entity_type);
-    if ($propCont) {
-      $node = $this->client->getNode($propCont->getId());
+  public function addGraphNode(array $properties, Neo4JDrupalIndexParam $indexParam = NULL) {
+    $node = $this->client->makeNode();
+    $node->setProperties($properties);
+    $node->save();
 
+    if ($indexParam) {
+      $this->getIndex($indexParam->name)->add($node, $indexParam->key, $indexParam->value);
+    }
+
+    watchdog(__FUNCTION__, 'Graph node has been created: @nid', array('@nid' => $node->getId()));
+
+    return $node;
+  }
+
+  /**
+   * @param Neo4JDrupalIndexParam $indexParam
+   */
+  public function deleteEntity(Neo4JDrupalIndexParam $indexParam) {
+    $this->deleteEntityConnections($indexParam);
+
+    if ($node = $indexParam->getNode()) {
+      $this->getIndex($indexParam->name)->remove($node);
+      $node->delete();
+      watchdog(__FUNCTION__, 'Graph node has been deleted: @nid', array('@nid' => $node->getId()));
+    }
+  }
+
+  public function deleteEntityConnections(Neo4JDrupalIndexParam $indexParam) {
+    if ($node = $indexParam->getNode()) {
       $relationships = $node->getRelationships();
       foreach ($relationships as $relationship) {
         $relationship->delete();
       }
-
-      $this->getIndex(NEO4J_CONNECTOR_ENTITY_INDEX)->remove($node);
-      $node->delete();
-      watchdog(__FUNCTION__, 'Graph node has been deleted: @nid', array('@nid' => $node->getId()));
     }
   }
 
   /**
    * @param $entity
    * @param string $entity_type
+   * @param array $properties
+   * @param Neo4JDrupalIndexParam $indexParam
    */
-  public function updateEntity($entity, $entity_type = 'node') {
-    $this->deleteEntity($entity, $entity_type);
-    $this->addEntity($entity, $entity_type);
+  public function updateEntity($entity, $entity_type = 'node', array $properties, Neo4JDrupalIndexParam $indexParam = NULL) {
+    $this->deleteEntity($indexParam);
+    $this->addEntity($entity, $entity_type, $properties, $indexParam);
   }
 
   /**
-   * @param $entity_type
    * @param $entity
-   * @return \Everyman\Neo4j\PropertyContainer
+   * @param $entity_type
+   * @param $node
    */
-  public function getNodeOfEntity($entity, $entity_type = 'node') {
-    list($id,,) = entity_extract_ids($entity_type, $entity);
-    return $this->getNodeByEntityID($id);
-  }
-
-  /**
-   * @param $entity_id
-   * @return \Everyman\Neo4j\PropertyContainer
-   */
-  public function getNodeByEntityID($entity_id) {
-    // @todo use entity_type
-    return $this->getIndex(NEO4J_CONNECTOR_ENTITY_INDEX)->findOne('entity_id', $entity_id);
+  public function addEntityFields($entity, $entity_type, $node) {
+    list(, , $bundle) = entity_extract_ids($entity_type, $entity);
+    $field_instances = field_info_instances($entity_type, $bundle);
+    foreach ($field_instances as $field_instance) {
+      if ($neo4jFieldHandler = Neo4JDrupalFieldHandlerFactory::getInstance($field_instance['widget']['module'], $node)) {
+        $neo4jFieldHandler->processFieldData($entity, $entity_type, $field_instance['field_name']);
+      }
+    }
   }
 
 }
@@ -246,6 +252,38 @@ class Neo4JDrupalTaxonomyFieldHandler extends Neo4JDrupalAbstractFieldHandler {
     }
 
     $this->node->relateTo($termNode, $this->referenceName)->save();
+  }
+
+}
+
+class Neo4JDrupalIndexParam {
+
+  public $name;
+
+  public $key;
+
+  public $value;
+
+  /**
+   * @param null $name
+   * @param null $key
+   * @param null $value
+   */
+  public function __construct($name = NULL, $key = NULL, $value = NULL) {
+    $this->name = $name;
+    $this->key = $key;
+    $this->value = $value;
+  }
+
+  /**
+   * @return Node|NULL
+   */
+  public function getNode() {
+    $propCont = Neo4JDrupal::sharedInstance()->getIndex($this->name)->findOne($this->key, $this->value);
+    if ($propCont) {
+      return $this->client->getNode($propCont->getId());
+    }
+    return FALSE;
   }
 
 }
