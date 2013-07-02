@@ -1,20 +1,37 @@
 <?php
 
 function neo4j_connector_node_graph_info_page($node) {
-  $propCont = Neo4JDrupal::sharedInstance()->getNodeOfEntity($node);
+  $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_NODE_INDEX, 'entity_id', $node->nid);
+  return neo4j_connector_graph_node_info_page_content($indexParam);
+}
 
-  if (!$propCont) {
+function neo4j_connector_user_graph_info_page($account) {
+  $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_USER_INDEX, 'user_id', $account->uid);
+  return neo4j_connector_graph_node_info_page_content($indexParam);
+}
+
+function neo4j_connector_term_graph_info_page($term) {
+  $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_TERM_INDEX, 'tid', $term->tid);
+  return neo4j_connector_graph_node_info_page_content($indexParam);
+}
+
+/**
+ * @param $node
+ * @param $indexParam
+ * @return null|string
+ */
+function neo4j_connector_graph_node_info_page_content(Neo4JDrupalIndexParam $indexParam) {
+  $graph_node = $indexParam->getNode();
+
+  if (!$graph_node) {
     return t('Cannot find associated graph node. Terribly sorry.');
   }
 
   $info = array();
-
-  $info[] = t('Node ID: <strong>@nodeid</strong>', array('@nodeid' => $propCont->getId()));
-
-  $data_browser_link = 'http://localhost:7474/webadmin/#/data/search/' . $propCont->getId() . '/';
+  $info[] = t('Graph node ID: <strong>@nodeid</strong>', array('@nodeid' => $graph_node->getId()));
+  $data_browser_link = 'http://localhost:7474/webadmin/#/data/search/' . $graph_node->getId() . '/';
   $info[] = t('Data browser link') . ': ' . l($data_browser_link, $data_browser_link);
-
-  $info[] = '<pre>start n=node:entity_index(entity_id="' . $node->nid . '") return n;</pre>';
+  $info[] = '<pre>start n=node:' . $indexParam->name . '(' . $indexParam->key . '="' . $indexParam->value . '") return n;</pre>';
 
   return theme('item_list', array('items' => $info));
 }

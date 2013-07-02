@@ -7,8 +7,6 @@ use Everyman\Neo4j\Client;
 use Everyman\Neo4j\Index\NodeIndex;
 use Everyman\Neo4j\Node;
 
-define('NEO4J_CONNECTOR_ENTITY_INDEX', 'entity_index');
-
 class Neo4JDrupal {
 
   public $client;
@@ -150,7 +148,7 @@ class Neo4JDrupalFieldHandlerFactory {
         return new Neo4JDrupalSimpleValueFieldHandler($node, $module_name, 'HAS_NUMBER', 'number_field_index', 'value');
 
       case 'taxonomy':
-        return new Neo4JDrupalTaxonomyFieldHandler($node, $module_name, 'HAS_TERM', 'term_index');
+        return new Neo4JDrupalTaxonomyFieldHandler($node, $module_name, 'HAS_TERM', NEO4J_CONNECTOR_TERM_INDEX);
 
     }
 
@@ -219,7 +217,9 @@ class Neo4JDrupalSimpleValueFieldHandler extends Neo4JDrupalAbstractFieldHandler
 class Neo4JDrupalEntityreferenceFieldHandler extends Neo4JDrupalAbstractFieldHandler {
 
   public function processFieldItem(array $item) {
-    $referencedNode = Neo4JDrupal::sharedInstance()->getNodeByEntityID($item['target_id']);
+    // @todo warning - make sure it doesn't only work with nodes
+    $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_NODE_INDEX, 'entity_id', $item['target_id']);
+    $referencedNode = $indexParam->getNode();
     if ($referencedNode) {
       $this->node->relateTo($referencedNode, $this->referenceName)->save();
     }
@@ -239,16 +239,16 @@ class Neo4JDrupalTaxonomyFieldHandler extends Neo4JDrupalAbstractFieldHandler {
   public function processFieldItem(array $item) {
     $term = taxonomy_term_load($item['tid']);
 
-    $termNode = Neo4JDrupal::sharedInstance()->getIndex($this->index)->findOne('id', $term->tid);
+    $termNode = Neo4JDrupal::sharedInstance()->getIndex($this->index)->findOne('tid', $term->tid);
 
     if (!$termNode) {
       $termNode = Neo4JDrupal::sharedInstance()->client->makeNode(array(
         'title' => $term->name,
-        'id' => $term->tid,
-        'type' => 'taxonomy_term',
+        'tid' => $term->tid,
+        'entity_type' => 'taxonomy_term',
       ));
       $termNode->save();
-      Neo4JDrupal::sharedInstance()->getIndex($this->index)->add($termNode, 'id', $term->tid);
+      Neo4JDrupal::sharedInstance()->getIndex($this->index)->add($termNode, 'tid', $term->tid);
     }
 
     $this->node->relateTo($termNode, $this->referenceName)->save();
@@ -281,7 +281,7 @@ class Neo4JDrupalIndexParam {
   public function getNode() {
     $propCont = Neo4JDrupal::sharedInstance()->getIndex($this->name)->findOne($this->key, $this->value);
     if ($propCont) {
-      return $this->client->getNode($propCont->getId());
+      return Neo4JDrupal::sharedInstance()->client->getNode($propCont->getId());
     }
     return FALSE;
   }
