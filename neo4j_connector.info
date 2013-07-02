@@ -1,2 +1,3 @@
 name = Neo4J Connector
 core = 7.x
+files[] = plugin/neo4j_connector.inc
