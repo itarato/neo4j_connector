@@ -121,7 +121,8 @@ class Neo4JDrupal {
     list(, , $bundle) = entity_extract_ids($entity_type, $entity);
     $field_instances = field_info_instances($entity_type, $bundle);
     foreach ($field_instances as $field_instance) {
-      if ($neo4jFieldHandler = Neo4JDrupalFieldHandlerFactory::getInstance($field_instance['widget']['module'], $node)) {
+      $field_info = field_info_field($field_instance['field_name']);
+      if ($neo4jFieldHandler = Neo4JDrupalFieldHandlerFactory::getInstance($field_info['module'], $node)) {
         $neo4jFieldHandler->processFieldData($entity, $entity_type, $field_instance['field_name']);
       }
     }
@@ -139,7 +140,13 @@ class Neo4JDrupalFieldHandlerFactory {
     switch ($module_name) {
 
       case 'entityreference':
-        return new Neo4JDrupalEntityreferenceFieldHandler($node, $module_name, 'REFERENCES');
+        return new Neo4JDrupalEntityreferenceFieldHandler($node, $module_name, 'NODE_REFERENCE');
+
+      case 'node_reference':
+        return new Neo4JDrupalNodereferenceFieldHandler($node, $module_name, 'NODE_REFERENCE');
+
+      case 'user_reference':
+        return new Neo4JDrupalUserreferenceFieldHandler($node, $module_name, 'USER_REFERENCE');
 
       case 'text':
         return new Neo4JDrupalSimpleValueFieldHandler($node, $module_name, 'HAS_TEXT', 'text_field_index', 'value');
@@ -173,6 +180,10 @@ abstract class Neo4JDrupalAbstractFieldHandler {
 
   public function processFieldData($entity, $entity_type, $field_name) {
     $items = field_get_items($entity_type, $entity, $field_name);
+
+    if (!$items) {
+      return;
+    }
 
     foreach ($items as $item) {
       $this->processFieldItem($item);
@@ -219,8 +230,31 @@ class Neo4JDrupalEntityreferenceFieldHandler extends Neo4JDrupalAbstractFieldHan
   public function processFieldItem(array $item) {
     // @todo warning - make sure it doesn't only work with nodes
     $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_NODE_INDEX, 'entity_id', $item['target_id']);
-    $referencedNode = $indexParam->getNode();
-    if ($referencedNode) {
+    if ($referencedNode = $indexParam->getNode()) {
+      $this->node->relateTo($referencedNode, $this->referenceName)->save();
+    }
+  }
+
+}
+
+class Neo4JDrupalNodereferenceFieldHandler extends Neo4JDrupalAbstractFieldHandler {
+
+  public function processFieldItem(array $item) {
+    // @todo warning - make sure it doesn't only work with nodes
+    $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_NODE_INDEX, 'entity_id', $item['nid']);
+    if ($referencedNode = $indexParam->getNode()) {
+      $this->node->relateTo($referencedNode, $this->referenceName)->save();
+    }
+  }
+
+}
+
+class Neo4JDrupalUserreferenceFieldHandler extends Neo4JDrupalAbstractFieldHandler {
+
+  public function processFieldItem(array $item) {
+    // @todo warning - make sure it doesn't only work with nodes
+    $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_USER_INDEX, 'user_id', $item['uid']);
+    if ($referencedNode = $indexParam->getNode()) {
       $this->node->relateTo($referencedNode, $this->referenceName)->save();
     }
   }
