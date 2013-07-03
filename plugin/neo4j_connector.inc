@@ -140,13 +140,16 @@ class Neo4JDrupalFieldHandlerFactory {
     switch ($module_name) {
 
       case 'entityreference':
-        return new Neo4JDrupalEntityreferenceFieldHandler($node, $module_name, 'NODE_REFERENCE');
+        $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_NODE_INDEX, 'entity_id');
+        return new Neo4JDrupalReferenceFieldHandler($node, $module_name, 'NODE_REFERENCE', $indexParam, 'target_id');
 
       case 'node_reference':
-        return new Neo4JDrupalNodereferenceFieldHandler($node, $module_name, 'NODE_REFERENCE');
+        $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_NODE_INDEX, 'entity_id');
+        return new Neo4JDrupalReferenceFieldHandler($node, $module_name, 'NODE_REFERENCE', $indexParam, 'nid');
 
       case 'user_reference':
-        return new Neo4JDrupalUserreferenceFieldHandler($node, $module_name, 'USER_REFERENCE');
+        $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_USER_INDEX, 'user_id');
+        return new Neo4JDrupalReferenceFieldHandler($node, $module_name, 'USER_REFERENCE', $indexParam, 'uid');
 
       case 'text':
         return new Neo4JDrupalSimpleValueFieldHandler($node, $module_name, 'HAS_TEXT', 'text_field_index', 'value');
@@ -159,7 +162,7 @@ class Neo4JDrupalFieldHandlerFactory {
 
     }
 
-    return null;
+    return NULL;
   }
 
 }
@@ -200,11 +203,10 @@ class Neo4JDrupalSimpleValueFieldHandler extends Neo4JDrupalAbstractFieldHandler
 
   public $referenceName;
 
-  public function __construct(Node $node, $type, $indexName, $referenceName, $fieldValueKey) {
+  public function __construct(Node $node, $type, $referenceName, $indexName, $fieldValueKey) {
     parent::__construct($node, $type, $referenceName);
     $this->indexName = $indexName;
     $this->fieldValueKey = $fieldValueKey;
-    $this->referenceName = $referenceName;
   }
 
   public function processFieldItem(array $item) {
@@ -220,41 +222,26 @@ class Neo4JDrupalSimpleValueFieldHandler extends Neo4JDrupalAbstractFieldHandler
       Neo4JDrupal::sharedInstance()->getIndex($this->indexName)->add($field_node, 'value', $item[$this->fieldValueKey]);
     }
 
-    $this->node->relateTo($field_node, $this->indexName)->save();
+    $this->node->relateTo($field_node, $this->referenceName)->save();
   }
 
 }
 
-class Neo4JDrupalEntityreferenceFieldHandler extends Neo4JDrupalAbstractFieldHandler {
+class Neo4JDrupalReferenceFieldHandler extends Neo4JDrupalAbstractFieldHandler {
 
-  public function processFieldItem(array $item) {
-    // @todo warning - make sure it doesn't only work with nodes
-    $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_NODE_INDEX, 'entity_id', $item['target_id']);
-    if ($referencedNode = $indexParam->getNode()) {
-      $this->node->relateTo($referencedNode, $this->referenceName)->save();
-    }
+  public $indexParam;
+
+  protected $fieldIDKey;
+
+  public function __construct(Node $node, $type, $referenceName, Neo4JDrupalIndexParam $indexParam, $fieldIDKey) {
+    parent::__construct($node, $type, $referenceName);
+    $this->indexParam = $indexParam;
+    $this->fieldIDKey = $fieldIDKey;
   }
 
-}
-
-class Neo4JDrupalNodereferenceFieldHandler extends Neo4JDrupalAbstractFieldHandler {
-
   public function processFieldItem(array $item) {
-    // @todo warning - make sure it doesn't only work with nodes
-    $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_NODE_INDEX, 'entity_id', $item['nid']);
-    if ($referencedNode = $indexParam->getNode()) {
-      $this->node->relateTo($referencedNode, $this->referenceName)->save();
-    }
-  }
-
-}
-
-class Neo4JDrupalUserreferenceFieldHandler extends Neo4JDrupalAbstractFieldHandler {
-
-  public function processFieldItem(array $item) {
-    // @todo warning - make sure it doesn't only work with nodes
-    $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_USER_INDEX, 'user_id', $item['uid']);
-    if ($referencedNode = $indexParam->getNode()) {
+    $this->indexParam->value = $item[$this->fieldIDKey];
+    if ($referencedNode = $this->indexParam->getNode()) {
       $this->node->relateTo($referencedNode, $this->referenceName)->save();
     }
   }
