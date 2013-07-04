@@ -1,18 +1,22 @@
 <?php
 /**
  * @file
+ * Main module functions.
  */
 
 require_once __DIR__ . '/vendor/autoload.php';
 
+// Index names.
 define('NEO4J_CONNECTOR_NODE_INDEX', 'entity_index');
 define('NEO4J_CONNECTOR_USER_INDEX', 'user_index');
 define('NEO4J_CONNECTOR_TERM_INDEX', 'term_index');
 
-function neo4j_connector_init() {}
-
+/**
+ * Implements hook_menu().
+ */
 function neo4j_connector_menu() {
   return array(
+    // Drupal entity tabs.
     'node/%node/graph' => array(
       'type' => MENU_LOCAL_TASK,
       'title' => 'Graph info',
@@ -37,45 +41,93 @@ function neo4j_connector_menu() {
       'file' => 'neo4j_connector.pages.inc',
       'access callback' => TRUE,
     ),
-    'neo4j/console' => array(
-      'title' => 'Neo4J db console',
+
+    // Neo4J admin section.
+    'admin/config/neo4j' => array(
+      'title' => 'Neo4J',
+      'description' => 'Administration tools.',
+      'page callback' => 'system_admin_menu_block_page',
+      'access arguments' => array('access administration pages'),
+      'file' => 'system.admin.inc',
+      'file path' => drupal_get_path('module', 'system'),
+    ),
+
+    // Regenerate nodes / users.
+    'admin/config/neo4j/settings' => array(
+      'title' => 'Admin settings',
+      'page callback' => 'neo4j_connector_admin_settings_page',
+      'file' => 'neo4j_connector.pages.inc',
+      'access callback' => TRUE,
+      'description' => t('Neo4J settings'),
+    ),
+
+    // 'Eval' console.
+    'admin/config/neo4j/console' => array(
+      'title' => 'Console',
       'page callback' => 'neo4j_connector_console_page',
       'file' => 'neo4j_connector.pages.inc',
       'access callback' => TRUE,
+      'description' => t('DB console'),
     ),
   );
 }
 
+/**
+ * Implements hook_node_insert().
+ */
 function neo4j_connector_node_insert($node) {
   $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_NODE_INDEX, 'entity_id', $node->nid);
   Neo4JDrupal::sharedInstance()->addEntity($node, 'node', neo4j_connector_properties_of_node($node), $indexParam);
 }
 
+/**
+ * Implements hook_node_delete().
+ */
 function neo4j_connector_node_delete($node) {
   $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_NODE_INDEX, 'entity_id', $node->nid);
   Neo4JDrupal::sharedInstance()->deleteEntity($node, 'node', $indexParam);
 }
 
+/**
+ * Implements hook_node_update().
+ */
 function neo4j_connector_node_update($node) {
   $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_NODE_INDEX, 'entity_id', $node->nid);
   Neo4JDrupal::sharedInstance()->updateEntity($node, 'node', neo4j_connector_properties_of_node($node), $indexParam);
 }
 
+/**
+ * Implements hook_user_insert().
+ */
 function neo4j_connector_user_insert(&$edit, $account, $category) {
   $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_USER_INDEX, 'user_id', $account->uid);
   Neo4JDrupal::sharedInstance()->addEntity($account, 'user', neo4j_connector_properties_of_user($account), $indexParam);
 }
 
+/**
+ * Implements hook_user_update().
+ */
 function neo4j_connector_user_update(&$edit, $account, $category) {
   $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_USER_INDEX, 'user_id', $account->uid);
   Neo4JDrupal::sharedInstance()->updateEntity($account, 'user', neo4j_connector_properties_of_user($account), $indexParam);
 }
 
+/**
+ * Implements hook_user_delete().
+ */
 function neo4j_connector_user_delete($account) {
   $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_USER_INDEX, 'user_id', $account->uid);
   Neo4JDrupal::sharedInstance()->deleteEntity($indexParam);
 }
 
+/**
+ * Helper function to collect graph node properties of a user to store.
+ *
+ * @param $account
+ *  User object.
+ * @return array
+ *  Property key value array.
+ */
 function neo4j_connector_properties_of_user($account) {
   return array(
     'name' => $account->name,
@@ -85,6 +137,14 @@ function neo4j_connector_properties_of_user($account) {
   );
 }
 
+/**
+ * Helper function to collect graph node properties of a node to store.
+ *
+ * @param $node
+ *  Node object.
+ * @return array
+ *  Property key value array.
+ */
 function neo4j_connector_properties_of_node($node) {
   return array(
     'title' => $node->title,
@@ -94,6 +154,44 @@ function neo4j_connector_properties_of_node($node) {
   );
 }
 
-function neo4j_connector_cron() {
-  // @todo delete single (non-entity) entries.
+/**
+ * Implements hook_cron_queue_info().
+ */
+function neo4j_connector_cron_queue_info() {
+  return array(
+    'neo4j_connector_node_regenerate' => array(
+      'worker callback' => 'neo4j_connector_queue_node_regenerate_worker',
+      'time' => 120,
+    ),
+    'neo4j_connector_user_regenerate' => array(
+      'worker callback' => 'neo4j_connector_queue_user_regenerate_worker',
+      'time' => 120,
+    ),
+  );
+}
+
+/**
+ * Queue worker callback for the node regeneration queue.
+ *
+ * @see neo4j_connector_cron_queue_info()
+ */
+function neo4j_connector_queue_node_regenerate_worker($nids) {
+  foreach ($nids as $nid) {
+    $node = node_load($nid);
+    $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_NODE_INDEX, 'entity_id', $node->nid);
+    Neo4JDrupal::sharedInstance()->updateEntity($node, 'node', neo4j_connector_properties_of_node($node), $indexParam);
+  }
+}
+
+/**
+ * Queue worker callback for the user regeneration queue.
+ *
+ * @see neo4j_connector_cron_queue_info()
+ */
+function neo4j_connector_queue_user_regenerate_worker($uids) {
+  foreach ($uids as $uid) {
+    $account = user_load($uid);
+    $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_USER_INDEX, 'user_id', $account->uid);
+    Neo4JDrupal::sharedInstance()->updateEntity($account, 'user', neo4j_connector_properties_of_user($account), $indexParam);
+  }
 }

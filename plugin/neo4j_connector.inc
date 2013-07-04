@@ -1,20 +1,39 @@
 <?php
 /**
  * @file
+ * Neo4J connector classes and interfaces.
  */
 
 use Everyman\Neo4j\Client;
 use Everyman\Neo4j\Index\NodeIndex;
 use Everyman\Neo4j\Node;
 
+/**
+ * Class Neo4JDrupal
+ * Main connector to the Neo4J database.
+ */
 class Neo4JDrupal {
 
+  /**
+   * Main DB client.
+   *
+   * @var Everyman\Neo4j\Client
+   */
   public $client;
 
+  /**
+   * Constructor.
+   * Use Neo4JDrupal::sharedInstance() instead.
+   */
   public function __construct() {
     $this->client = new Client();
   }
 
+  /**
+   * Singleton instance. It's the best to use this, unless you want some tricks.
+   *
+   * @return Neo4JDrupal
+   */
   public static function sharedInstance() {
     static $instance = NULL;
     if (!$instance) {
@@ -25,7 +44,9 @@ class Neo4JDrupal {
   }
 
   /**
-   * @param $index_name
+   * Request an index on the fly.
+   *
+   * @param $index_name string
    * @return NodeIndex
    */
   public function getIndex($index_name) {
@@ -40,7 +61,12 @@ class Neo4JDrupal {
   }
 
   /**
-   * @param $query
+   * Execute a query.
+   *
+   * @param $template
+   *  Query string.
+   * @param array $vars
+   *  Variables.
    * @return \Everyman\Neo4j\Query\ResultSet
    */
   public function query($template, $vars = array()) {
@@ -49,10 +75,19 @@ class Neo4JDrupal {
   }
 
   /**
+   * Adds a new Drupal entity to the DB.
+   * Also takes care about fields.
+   *
    * @param $entity
+   *  Entity object.
    * @param string $entity_type
+   *  Entity type string.
    * @param array $properties
+   *  Properties array to store on the graph node.
    * @param Neo4JDrupalIndexParam $indexParam
+   *  Index to locate the new node.
+   * @return Node
+   *  Created graph node object.
    */
   public function addEntity($entity, $entity_type = 'node', array $properties, Neo4JDrupalIndexParam $indexParam = NULL) {
     $node = $this->addGraphNode($properties, $indexParam);
@@ -61,8 +96,12 @@ class Neo4JDrupal {
   }
 
   /**
+   * Create graph node.
+   *
    * @param array $properties
+   *  Array of properties.
    * @param Neo4JDrupalIndexParam $indexParam
+   *  Index.
    * @return Node
    */
   public function addGraphNode(array $properties, Neo4JDrupalIndexParam $indexParam = NULL) {
@@ -74,16 +113,19 @@ class Neo4JDrupal {
       $this->getIndex($indexParam->name)->add($node, $indexParam->key, $indexParam->value);
     }
 
-    watchdog(__FUNCTION__, 'Graph node has been created: @nid', array('@nid' => $node->getId()));
+    watchdog(__FUNCTION__, 'Graph node has been created: @id', array('@id' => $node->getId()));
 
     return $node;
   }
 
   /**
+   * Delete a graph node using the index.
+   *
    * @param Neo4JDrupalIndexParam $indexParam
+   *  Index.
    */
   public function deleteEntity(Neo4JDrupalIndexParam $indexParam) {
-    $this->deleteEntityConnections($indexParam);
+    $this->deleteRelationships($indexParam);
 
     if ($node = $indexParam->getNode()) {
       $this->getIndex($indexParam->name)->remove($node);
@@ -92,7 +134,13 @@ class Neo4JDrupal {
     }
   }
 
-  public function deleteEntityConnections(Neo4JDrupalIndexParam $indexParam) {
+  /**
+   * Remove all relationships from a graph node.
+   *
+   * @param Neo4JDrupalIndexParam $indexParam
+   *  Index.
+   */
+  public function deleteRelationships(Neo4JDrupalIndexParam $indexParam) {
     if ($node = $indexParam->getNode()) {
       $relationships = $node->getRelationships();
       foreach ($relationships as $relationship) {
@@ -102,10 +150,17 @@ class Neo4JDrupal {
   }
 
   /**
+   * Update a Drupal entity.
+   * Removes and reestablish all relationships (fields and references).
+   *
    * @param $entity
+   *  Drupal entity.
    * @param string $entity_type
+   *  Entity type.
    * @param array $properties
+   *  Properties to store.
    * @param Neo4JDrupalIndexParam $indexParam
+   *  Index.
    */
   public function updateEntity($entity, $entity_type = 'node', array $properties, Neo4JDrupalIndexParam $indexParam = NULL) {
     $this->deleteEntity($indexParam);
@@ -113,11 +168,16 @@ class Neo4JDrupal {
   }
 
   /**
+   * Create field relationships of an entity.
+   *
    * @param $entity
+   *  Drupal entity.
    * @param $entity_type
+   *  Entity type.
    * @param $node
+   *  Graph node.
    */
-  public function addEntityFields($entity, $entity_type, $node) {
+  public function addEntityFields($entity, $entity_type, Node $node) {
     list(, , $bundle) = entity_extract_ids($entity_type, $entity);
     $field_instances = field_info_instances($entity_type, $bundle);
     foreach ($field_instances as $field_instance) {
