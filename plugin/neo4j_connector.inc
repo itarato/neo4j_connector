@@ -190,11 +190,20 @@ class Neo4JDrupal {
 
 }
 
+/**
+ * Class Neo4JDrupalFieldHandlerFactory
+ * Factory to create field handler instances.
+ */
 class Neo4JDrupalFieldHandlerFactory {
 
   /**
-   * @param array $field_instance
-   * @return Neo4JDrupalAbstractFieldHandler
+   * Create an instance of the appropriate field handler.
+   *
+   * @param $module_name
+   *  Name of the module that defines the field.
+   * @param Node $node
+   *  Graph node.
+   * @return Neo4JDrupalAbstractFieldHandler|NULL
    */
   public static function getInstance($module_name, Node $node) {
     switch ($module_name) {
@@ -227,20 +236,55 @@ class Neo4JDrupalFieldHandlerFactory {
 
 }
 
+/**
+ * Class Neo4JDrupalAbstractFieldHandler
+ */
 abstract class Neo4JDrupalAbstractFieldHandler {
 
+  /**
+   * Graph node that the fields will be attached to.
+   *
+   * @var Everyman\Neo4j\Node
+   */
   protected $node;
 
+  /**
+   * Type.
+   *
+   * @var string
+   */
   protected $type;
 
+  /**
+   * Name of the relationship.
+   *
+   * @var string
+   */
   public $referenceName;
 
+  /**
+   * Constructor.
+   *
+   * @param Node $node
+   * @param $type
+   * @param $referenceName
+   */
   public function __construct(Node $node, $type, $referenceName) {
     $this->node = $node;
     $this->type = $type;
     $this->referenceName = $referenceName;
   }
 
+  /**
+   * Goes through of the fields and handle them.
+   *
+   * @param $entity
+   *  Drupal entity object.
+   * @param $entity_type
+   *  Drupal entity type.
+   * @param $field_name
+   *  Field name.
+   */
   public function processFieldData($entity, $entity_type, $field_name) {
     $items = field_get_items($entity_type, $entity, $field_name);
 
@@ -253,22 +297,59 @@ abstract class Neo4JDrupalAbstractFieldHandler {
     }
   }
 
+  /**
+   * Placeholder for the individual field processing.
+   *
+   * @param array $item
+   * @return mixed
+   */
   public abstract function processFieldItem(array $item);
 
 }
 
+/**
+ * Class Neo4JDrupalSimpleValueFieldHandler
+ * A value based field handler - contains a single value.
+ */
 class Neo4JDrupalSimpleValueFieldHandler extends Neo4JDrupalAbstractFieldHandler {
 
+  /**
+   * Key that holds the value (nid, value, target_id, ...).
+   *
+   * @var string
+   */
   public $fieldValueKey;
 
-  public $referenceName;
+  /**
+   * Name of the associated index.
+   *
+   * @var string
+   */
+  public $indexName;
 
+  /**
+   * Constructor.
+   *
+   * @param Node $node
+   *  Graph node to attach to.
+   * @param $type
+   *  Type of graph node.
+   * @param $referenceName
+   *  Name of the relationship.
+   * @param $indexName
+   *  Name of the index.
+   * @param $fieldValueKey
+   *  Key of the value in the field array.
+   */
   public function __construct(Node $node, $type, $referenceName, $indexName, $fieldValueKey) {
     parent::__construct($node, $type, $referenceName);
     $this->indexName = $indexName;
     $this->fieldValueKey = $fieldValueKey;
   }
 
+  /**
+   * Implements Neo4JDrupalAbstractFieldHandler::processFieldItem().
+   */
   public function processFieldItem(array $item) {
     $index = Neo4JDrupal::sharedInstance()->getIndex($this->indexName);
     $field_node = $index->findOne('value', $item[$this->fieldValueKey]);
@@ -287,20 +368,51 @@ class Neo4JDrupalSimpleValueFieldHandler extends Neo4JDrupalAbstractFieldHandler
 
 }
 
+/**
+ * Class Neo4JDrupalReferenceFieldHandler
+ * Entity reference based field handler.
+ */
 class Neo4JDrupalReferenceFieldHandler extends Neo4JDrupalAbstractFieldHandler {
 
+  /**
+   * Index that locates the graph node.
+   *
+   * @var Neo4JDrupalIndexParam
+   */
   public $indexParam;
 
-  protected $fieldIDKey;
+  /**
+   * Key that contains the value.
+   *
+   * @var string
+   */
+  protected $fieldValueKey;
 
+  /**
+   * Constructor.
+   *
+   * @param Node $node
+   *  Graph node.
+   * @param $type
+   *  Type.
+   * @param $referenceName
+   *  Name of relationship.
+   * @param Neo4JDrupalIndexParam $indexParam
+   *  Index.
+   * @param $fieldIDKey
+   *  Key of the value.
+   */
   public function __construct(Node $node, $type, $referenceName, Neo4JDrupalIndexParam $indexParam, $fieldIDKey) {
     parent::__construct($node, $type, $referenceName);
     $this->indexParam = $indexParam;
-    $this->fieldIDKey = $fieldIDKey;
+    $this->fieldValueKey = $fieldIDKey;
   }
 
+  /**
+   * Implements Neo4JDrupalAbstractFieldHandler::processFieldItem().
+   */
   public function processFieldItem(array $item) {
-    $this->indexParam->value = $item[$this->fieldIDKey];
+    $this->indexParam->value = $item[$this->fieldValueKey];
     if ($referencedNode = $this->indexParam->getNode()) {
       $this->node->relateTo($referencedNode, $this->referenceName)->save();
     }
@@ -308,8 +420,17 @@ class Neo4JDrupalReferenceFieldHandler extends Neo4JDrupalAbstractFieldHandler {
 
 }
 
+/**
+ * Class Neo4JDrupalTaxonomyFieldHandler
+ * Taxonomy term reference field handler.
+ */
 class Neo4JDrupalTaxonomyFieldHandler extends Neo4JDrupalAbstractFieldHandler {
 
+  /**
+   * Index name.
+   *
+   * @var string
+   */
   public $index;
 
   public function __construct(Node $node, $type, $referenceName, $index) {
@@ -337,18 +458,39 @@ class Neo4JDrupalTaxonomyFieldHandler extends Neo4JDrupalAbstractFieldHandler {
 
 }
 
+/**
+ * Class Neo4JDrupalIndexParam
+ * Defines a unique locator in the graph db. Used to identify Drupal items.
+ */
 class Neo4JDrupalIndexParam {
 
+  /**
+   * Name of the index.
+   *
+   * @var string
+   */
   public $name;
 
+  /**
+   * Key name.
+   *
+   * @var string
+   */
   public $key;
 
+  /**
+   * Value.
+   *
+   * @var string|number
+   */
   public $value;
 
   /**
-   * @param null $name
-   * @param null $key
-   * @param null $value
+   * Constructor.
+   *
+   * @param string $name
+   * @param string $key
+   * @param string $value
    */
   public function __construct($name = NULL, $key = NULL, $value = NULL) {
     $this->name = $name;
@@ -357,6 +499,8 @@ class Neo4JDrupalIndexParam {
   }
 
   /**
+   * Lookup the indexed graph node.
+   *
    * @return Node|NULL
    */
   public function getNode() {
