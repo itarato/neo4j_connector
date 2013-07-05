@@ -1,0 +1,12 @@
+<?php
+/**
+ * @file
+ * Neo4J Views additions.
+ */
+
+function neo4j_views_views_api() {
+  return array(
+    'api' => 3,
+  );
+}
+

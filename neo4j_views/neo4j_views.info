@@ -1,0 +1,4 @@
+name = Neo4J Views
+description = Views additions of the Neo4J connector module
+core = 7.x
+dependencies[] = neo4j_connector
