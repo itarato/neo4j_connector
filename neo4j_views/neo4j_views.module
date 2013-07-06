@@ -10,3 +10,6 @@ function neo4j_views_views_api() {
   );
 }
 
+function neo4j_views_views_data_alter(&$data) {
+  $a = 1;
+}
