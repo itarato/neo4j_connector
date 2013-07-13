@@ -11,5 +11,12 @@ function neo4j_views_views_api() {
 }
 
 function neo4j_views_views_data_alter(&$data) {
-  $a = 1;
+  $data['node']['neo4j_connector'] = array(
+    'title' => t('Neo4J field'),
+    'help' => t('Raw Neo4J filter proxy'),
+    'filter' => array(
+      'title' => t('Raw relationship / index filter'),
+      'handler' => 'neo4j_connector_raw_filter_handler',
+    ),
+  );
 }
