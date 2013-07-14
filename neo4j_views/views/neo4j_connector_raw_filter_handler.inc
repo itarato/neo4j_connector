@@ -20,6 +20,15 @@ class neo4j_connector_raw_filter_handler extends views_handler_filter {
       return;
     }
 
+    if (($neo4j_argument = $this->options['neo4j_argument']) != '') {
+      if (!($arg = (int) arg($neo4j_argument))) {
+        return;
+      }
+
+      $index = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_NODE_INDEX, 'entity_id', $arg);
+      $neo4j_query = 'START n=node(' . $index->getNode()->getId() . ') ' . $neo4j_query;
+    }
+
     $result_set = Neo4JDrupal::sharedInstance()->query($neo4j_query);
 
     $entity_ids = array();
@@ -31,7 +40,7 @@ class neo4j_connector_raw_filter_handler extends views_handler_filter {
       }
     }
 
-    if (!$entity_ids) {
+    if ($entity_ids) {
       $this->query->add_where($this->options['group'], 'nid', $entity_ids, 'IN');
     }
   }
@@ -46,6 +55,13 @@ class neo4j_connector_raw_filter_handler extends views_handler_filter {
       '#default_value' => $this->options['neo4j_query'],
     );
 
+    $form['neo4j_argument'] = array(
+      '#type' => 'select',
+      '#title' => t('Contextual argument - args(?)'),
+      '#options' => array_merge(array('' => t('-- Select argument number --')), array_combine(range(0, 10), range(0, 10))),
+      '#default_value' => $this->options['neo4j_argument'],
+    );
+
     parent::options_form($form, $form_state);
   }
 
@@ -55,6 +71,9 @@ class neo4j_connector_raw_filter_handler extends views_handler_filter {
   public function option_definition() {
     $options = parent::option_definition();
     $options['neo4j_query'] = array(
+      'default' => '',
+    );
+    $options['neo4j_argument'] = array(
       'default' => '',
     );
     return $options;

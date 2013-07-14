@@ -58,7 +58,7 @@ function neo4j_connector_graph_node_info_page_content(Neo4JDrupalIndexParam $ind
   $info[] = t('Graph node ID: <strong>@nodeid</strong>', array('@nodeid' => $graph_node->getId()));
   $data_browser_link = 'http://localhost:7474/webadmin/#/data/search/' . $graph_node->getId() . '/';
   $info[] = t('Data browser link') . ': ' . l($data_browser_link, $data_browser_link);
-  $info[] = '<pre>start n=node:' . $indexParam->name . '(' . $indexParam->key . '="' . $indexParam->value . '") return n;</pre>';
+  $info[] = '<pre>START n=node:' . $indexParam->name . '(' . $indexParam->key . '="' . $indexParam->value . '") RETURN n;</pre>';
 
   return theme('item_list', array('items' => $info));
 }
