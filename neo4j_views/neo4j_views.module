@@ -4,12 +4,18 @@
  * Neo4J Views additions.
  */
 
+/**
+ * Implements hook_views_api().
+ */
 function neo4j_views_views_api() {
   return array(
     'api' => 3,
   );
 }
 
+/**
+ * Implements hook_views_data_alter().
+ */
 function neo4j_views_views_data_alter(&$data) {
   $data['node']['neo4j_connector'] = array(
     'title' => t('Neo4J field'),

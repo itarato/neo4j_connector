@@ -43,6 +43,9 @@ class neo4j_connector_raw_filter_handler extends views_handler_filter {
     if ($entity_ids) {
       $this->query->add_where($this->options['group'], 'nid', $entity_ids, 'IN');
     }
+    else {
+      $this->query->add_where($this->options['group'], 'nid', 0);
+    }
   }
 
   /**
