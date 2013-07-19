@@ -26,7 +26,9 @@ class neo4j_connector_raw_filter_handler extends views_handler_filter {
       }
 
       $index = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_NODE_INDEX, 'entity_id', $arg);
-      $neo4j_query = 'START n=node(' . $index->getNode()->getId() . ') ' . $neo4j_query;
+      if ($index) {
+        $neo4j_query = 'START n=node(' . $index->getNode()->getId() . ') ' . $neo4j_query;
+      }
     }
 
     $result_set = Neo4JDrupal::sharedInstance()->query($neo4j_query);
