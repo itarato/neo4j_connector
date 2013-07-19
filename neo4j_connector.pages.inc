@@ -194,7 +194,7 @@ function neo4j_connector_form_regenerate_nodes_submit($form, $form_submit) {
     $queue->createItem(array_splice($nids, 0, 100));
   }
 
-  drupal_set_message(t('@count nodes are added to the regenerate queue.', array('@count' => $count)));
+  drupal_set_message(t('@count nodes are added to the regenerate queue. Don\'t forget to run cron to apply the changes.', array('@count' => $count)));
 }
 
 /**
@@ -227,5 +227,5 @@ function neo4j_connector_form_regenerate_users_submit($form, $form_submit) {
     $queue->createItem(array_splice($uids, 0, 100));
   }
 
-  drupal_set_message(t('@count users are added to the regenerate queue.', array('@count' => $count)));
+  drupal_set_message(t('@count users are added to the regenerate queue. Don\'t forget to run cron to apply the changes.', array('@count' => $count)));
 }
