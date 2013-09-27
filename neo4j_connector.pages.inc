@@ -118,6 +118,9 @@ function neo4j_connector_console_form_submit($form, $form_state) {
 function neo4j_connector_admin_settings_page() {
   $out = '';
 
+  $settings_form = drupal_get_form('neo4j_connector_admin_settings_form');
+  $out .= drupal_render($settings_form);
+
   $delete_all_form = drupal_get_form('neo4j_connector_form_purge_all_graph_db');
   $out .= drupal_render($delete_all_form);
 
@@ -228,4 +231,38 @@ function neo4j_connector_form_regenerate_users_submit($form, $form_submit) {
   }
 
   drupal_set_message(t('@count users are added to the regenerate queue. Don\'t forget to run cron to apply the changes.', array('@count' => $count)));
+}
+
+/**
+ * Admin settings form.
+ *
+ * @param $form
+ *  Form array.
+ * @param $form_state
+ *  Form state array.
+ * @return mixed
+ *  Form array.
+ */
+function neo4j_connector_admin_settings_form($form, $form_state) {
+  try {
+    Neo4JDrupal::sharedInstance()->client->getServerInfo();
+    drupal_set_message(t('Connection with Neo4J has been established.'));
+  }
+  catch (Exception $e) {
+    drupal_set_message(t('Cannot connect to the Neo4J database. Please, check the connection details.'), 'warning');
+  }
+
+  $form['neo4j_connector_host'] = array(
+    '#title' => t('Server host'),
+    '#type' => 'textfield',
+    '#default_value' => variable_get('neo4j_connector_host', 'localhost'),
+  );
+
+  $form['neo4j_connector_port'] = array(
+    '#title' => t('Server port'),
+    '#type' => 'textfield',
+    '#default_value' => variable_get('neo4j_connector_port', '7474'),
+  );
+
+  return system_settings_form($form);
 }

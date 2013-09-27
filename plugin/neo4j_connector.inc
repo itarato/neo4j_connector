@@ -26,7 +26,7 @@ class Neo4JDrupal {
    * Use Neo4JDrupal::sharedInstance() instead.
    */
   public function __construct() {
-    $this->client = new Client();
+    $this->client = new Client(variable_get('neo4j_connector_host', 'localhost'), variable_get('neo4j_connector_port', '7474'));
   }
 
   /**

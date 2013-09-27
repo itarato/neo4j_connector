@@ -129,12 +129,16 @@ function neo4j_connector_user_delete($account) {
  *  Property key value array.
  */
 function neo4j_connector_properties_of_user($account) {
-  return array(
+  $properties = array(
     'name' => $account->name,
     'mail' => $account->mail,
     'entity_id' => $account->uid,
     'entity_type' => 'user',
   );
+
+  drupal_alter('neo4j_connector_user_properties', $properties, $account);
+
+  return $properties;
 }
 
 /**
@@ -146,12 +150,16 @@ function neo4j_connector_properties_of_user($account) {
  *  Property key value array.
  */
 function neo4j_connector_properties_of_node($node) {
-  return array(
+  $properties =  array(
     'title' => $node->title,
     'entity_id' => $node->nid,
     'entity_type' => 'node',
     'bundle' => $node->type,
   );
+
+  drupal_alter('neo4j_connector_node_properties', $properties, $node);
+
+  return $properties;
 }
 
 /**
