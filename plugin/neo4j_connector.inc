@@ -161,10 +161,12 @@ class Neo4JDrupal {
    *  Properties to store.
    * @param Neo4JDrupalIndexParam $indexParam
    *  Index.
+   *
+   * @return Node
    */
   public function updateEntity($entity, $entity_type = 'node', array $properties, Neo4JDrupalIndexParam $indexParam = NULL) {
     $this->deleteEntity($indexParam);
-    $this->addEntity($entity, $entity_type, $properties, $indexParam);
+    return $this->addEntity($entity, $entity_type, $properties, $indexParam);
   }
 
   /**
