@@ -149,5 +149,12 @@ function neo4j_connector_index_process_index($limit = NULL) {
         ), WATCHDOG_ERROR);
         break;
     }
+
+    if (isset($graph_node)) {
+      $record->remote_id = $graph_node->getId();
+      $record->status = NEO4J_CONNECTOR_INDEX_STATUS_INDEXED;
+      $record->changed = $_SERVER['REQUEST_TIME'];
+      drupal_write_record('neo4j_connector_index', $record, array('entity_type' => $record->entity_type, 'entity_id' => $record->entity_id));
+    }
   }
 }
