@@ -5,9 +5,13 @@
  */
 
 require_once __DIR__ . '/vendor/autoload.php';
+require_once __DIR__ . '/neo4j_connector.index.inc';
 
 // Index names.
 define('NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX', 'entity_index_');
+
+// Limit of items to process during reindex batch op.
+define('NEO4J_CONNECTOR_REINDEX_LIMIT', 100);
 
 /**
  * Implements hook_menu().
@@ -71,15 +75,22 @@ function neo4j_connector_menu() {
 }
 
 function neo4j_connector_entity_insert($entity, $type) {
-  neo4j_connector_index_add_to_index($entity, $type);
+  list ($id,,) = entity_extract_ids($type, $entity);
+  neo4j_connector_index_update_in_index($type, $id);
 }
 
 function neo4j_connector_entity_update($entity, $type) {
-  neo4j_connector_index_add_to_index($entity, $type);
+  list ($id,,) = entity_extract_ids($type, $entity);
+  neo4j_connector_index_update_in_index($type, $id);
 }
 
 function neo4j_connector_entity_delete($entity, $type) {
-  neo4j_connector_index_remove_from_index($type, $entity);
+  list ($id,,) = entity_extract_ids($type, $entity);
+
+  $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . $type, 'entity_id', $id);
+  Neo4JDrupal::sharedInstance()->deleteEntity($entity, $type, $indexParam);
+
+  neo4j_connector_index_delete($type, $id);
 }
 
 /**
@@ -141,26 +152,50 @@ function neo4j_connector_cron_queue_info() {
   );
 }
 
-/**
- * Queue worker callback for the node regeneration queue.
- *
- * @see neo4j_connector_cron_queue_info()
- */
-function neo4j_connector_queue_node_regenerate_worker($nids) {
-  foreach ($nids as $nid) {
-    $node = node_load($nid);
-    neo4j_connector_add_entity_to_neo4j($node, 'node');
+function _neo4j_connector_batch_op_mark_for_index($entity_type, &$context) {
+  if (empty($context['sandbox'])) {
+    $context['sandbox']['progress'] = 0;
+
+    $query = new EntityFieldQuery();
+    $query->entityCondition('entity_type', $entity_type);
+    $context['sandbox']['count'] = $query->count()->execute();
   }
+
+  // @todo add not-in-() using the existing indexed ids.
+
+  $query = new EntityFieldQuery();
+  $query->entityCondition('entity_type', $entity_type);
+  $query->range($context['sandbox']['progress'], NEO4J_CONNECTOR_REINDEX_LIMIT);
+  $query->entityOrderBy('entity_id');
+  $result = $query->execute();
+
+  if (!empty($result[$entity_type])) {
+    foreach (array_keys($result[$entity_type]) as $entity_id) {
+      neo4j_connector_index_update_in_index($entity_type, $entity_id);
+      $context['sandbox']['progress']++;
+    }
+  }
+
+  $context['message'] = t('@current out of @total @type entity have been marked in the index.', array(
+    '@current' => $context['sandbox']['progress'],
+    '@total' => $context['sandbox']['count'],
+    '@type' => $entity_type,
+  ));
+  $finished = $context['sandbox']['count'] == 0 ? 1 : $context['sandbox']['progress'] / $context['sandbox']['count'];
+  $context['finished'] = $finished;
 }
 
-/**
- * Queue worker callback for the user regeneration queue.
- *
- * @see neo4j_connector_cron_queue_info()
- */
-function neo4j_connector_queue_user_regenerate_worker($uids) {
-  foreach ($uids as $uid) {
-    $account = user_load($uid);
-    neo4j_connector_add_entity_to_neo4j($account, 'user');
+function _neo4j_connector_batch_op_reindex(&$context) {
+  if (empty($context['sandbox'])) {
+    $index_stat = neo4j_connector_index_get_stat();
+    $context['sandbox']['total'] = $index_stat['non-indexed'];
   }
+
+  neo4j_connector_index_process_index();
+
+  $index_stat = neo4j_connector_index_get_stat();
+
+  $context['message'] = t('@count item(s) left.', array('@count' => $index_stat['non-indexed']));
+  $finished = $index_stat['non-indexed'] == 0 ? 1 : $index_stat['non-indexed'] / $context['sandbox']['total'];
+  $context['finished'] = $finished;
 }

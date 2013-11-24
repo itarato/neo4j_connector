@@ -124,11 +124,11 @@ function neo4j_connector_admin_settings_page() {
   $delete_all_form = drupal_get_form('neo4j_connector_form_purge_all_graph_db');
   $out .= drupal_render($delete_all_form);
 
-  $regenerate_nodes_form = drupal_get_form('neo4j_connector_form_regenerate_nodes');
-  $out .= drupal_render($regenerate_nodes_form);
+  $mark_for_index_form = drupal_get_form('neo4j_connector_form_mark_for_index');
+  $out .= drupal_render($mark_for_index_form);
 
-  $regenerate_users_form = drupal_get_form('neo4j_connector_form_regenerate_users');
-  $out .= drupal_render($regenerate_users_form);
+  $reindex_form = drupal_get_form('neo4j_connector_form_reindex');
+  $out .= drupal_render($reindex_form);
 
   return $out;
 }
@@ -164,73 +164,9 @@ function neo4j_connector_form_purge_all_graph_db_submit($form, $form_state) {
     DELETE n
   ");
 
+  neo4j_connector_index_delete_all();
+
   drupal_set_message(t('All relationships and nodes have been deleted.'));
-}
-
-/**
- * Regenerate all nodes form.
- */
-function neo4j_connector_form_regenerate_nodes($form) {
-  $form['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Regenerate nodes'),
-  );
-
-  return $form;
-}
-
-/**
- * Submit handler of the renegerate all nodes form.
- *
- * @see neo4j_connector_form_regenerate_nodes()
- */
-function neo4j_connector_form_regenerate_nodes_submit($form, $form_submit) {
-  $nids = db_query("
-    SELECT nid
-    FROM {node}
-    ORDER BY nid ASC
-  ")->fetchCol();
-
-  $count = count($nids);
-  $queue = DrupalQueue::get('neo4j_connector_node_regenerate');
-  while (count($nids) > 0) {
-    $queue->createItem(array_splice($nids, 0, 100));
-  }
-
-  drupal_set_message(t('@count nodes are added to the regenerate queue. Don\'t forget to run cron to apply the changes.', array('@count' => $count)));
-}
-
-/**
- * Regenerate users form.
- */
-function neo4j_connector_form_regenerate_users($form) {
-  $form['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Regenerate users'),
-  );
-
-  return $form;
-}
-
-/**
- * Submit handler for the regenerate users form.
- *
- * @see neo4j_connector_form_regenerate_users()
- */
-function neo4j_connector_form_regenerate_users_submit($form, $form_submit) {
-  $uids = db_query("
-    SELECT uid
-    FROM {users}
-    ORDER BY uid ASC
-  ")->fetchCol();
-
-  $count = count($uids);
-  $queue = DrupalQueue::get('neo4j_connector_user_regenerate');
-  while (count($uids) > 0) {
-    $queue->createItem(array_splice($uids, 0, 100));
-  }
-
-  drupal_set_message(t('@count users are added to the regenerate queue. Don\'t forget to run cron to apply the changes.', array('@count' => $count)));
 }
 
 /**
@@ -265,4 +201,59 @@ function neo4j_connector_admin_settings_form($form, $form_state) {
   );
 
   return system_settings_form($form);
+}
+
+function neo4j_connector_form_mark_for_index($form, $form_state) {
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Mark all entities to the index'),
+  );
+
+  return $form;
+}
+
+function neo4j_connector_form_mark_for_index_submit($form, $form_state) {
+  $entity_types = entity_get_info();
+
+  $operations = array();
+  foreach ($entity_types as $type => $info) {
+    $operations[] = array('_neo4j_connector_batch_op_mark_for_index', array($type));
+  }
+
+  $batch = array(
+    'operations' => $operations,
+    'title' => 'Re-indexing entities',
+    'file' => 'neo4j_connector.pages.inc',
+  );
+
+  batch_set($batch);
+}
+
+function neo4j_connector_form_reindex($form, $form_state) {
+  $index_stat = neo4j_connector_index_get_stat();
+  $form['stat'] = array(
+    '#markup' => t('@indexed / @total are in the database.', array(
+      '@indexed' => $index_stat['indexed'],
+      '@total' => $index_stat['total'],
+    )),
+    '#prefix' => '<div>',
+    '#suffix' => '</div>',
+  );
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Re-index'),
+  );
+
+  return $form;
+}
+
+function neo4j_connector_form_reindex_submit($form, $form_state) {
+  $batch = array(
+    'operations' => array(
+      array('_neo4j_connector_batch_op_reindex', array()),
+    ),
+    'title' => 'Send index to Neo4J',
+  );
+  batch_set($batch);
 }
