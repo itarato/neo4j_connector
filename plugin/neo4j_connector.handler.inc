@@ -215,13 +215,13 @@ class Neo4JDrupalReferenceFieldHandler extends Neo4JDrupalAbstractFieldHandler {
    *  Name of relationship.
    * @param Neo4JDrupalIndexParam $indexParam
    *  Index.
-   * @param $fieldIDKey
+   * @param $field_value_key
    *  Key of the value.
    */
-  public function __construct(Node $node, $type, $referenceName, Neo4JDrupalIndexParam $indexParam, $fieldIDKey) {
+  public function __construct(Node $node, $type, $referenceName, Neo4JDrupalIndexParam $indexParam, $field_value_key) {
     parent::__construct($node, $type, $referenceName);
     $this->indexParam = $indexParam;
-    $this->fieldValueKey = $fieldIDKey;
+    $this->fieldValueKey = $field_value_key;
   }
 
   /**
