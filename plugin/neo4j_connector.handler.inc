@@ -26,15 +26,15 @@ class Neo4JDrupalFieldHandlerFactory {
 
       case 'entityreference':
         $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . 'node', 'entity_id');
-        return new Neo4JDrupalReferenceFieldHandler($graph_node, $module_name, 'NODE_REFERENCE', $indexParam, 'target_id');
+        return new Neo4JDrupalReferenceFieldHandler($graph_node, $module_name, 'NODE_REFERENCE', $indexParam, 'target_id', 'node');
 
       case 'node_reference':
         $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . 'node', 'entity_id');
-        return new Neo4JDrupalReferenceFieldHandler($graph_node, $module_name, 'NODE_REFERENCE', $indexParam, 'nid');
+        return new Neo4JDrupalReferenceFieldHandler($graph_node, $module_name, 'NODE_REFERENCE', $indexParam, 'nid', 'node');
 
       case 'user_reference':
         $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . 'user', 'entity_id');
-        return new Neo4JDrupalReferenceFieldHandler($graph_node, $module_name, 'USER_REFERENCE', $indexParam, 'uid');
+        return new Neo4JDrupalReferenceFieldHandler($graph_node, $module_name, 'USER_REFERENCE', $indexParam, 'uid', 'user');
 
       case 'text':
         return new Neo4JDrupalSimpleValueFieldHandler($graph_node, $module_name, 'HAS_TEXT', 'text_field_index', 'value');
@@ -43,8 +43,8 @@ class Neo4JDrupalFieldHandlerFactory {
         return new Neo4JDrupalSimpleValueFieldHandler($graph_node, $module_name, 'HAS_NUMBER', 'number_field_index', 'value');
 
       case 'taxonomy':
-        return new Neo4JDrupalTaxonomyFieldHandler($graph_node, $module_name, 'HAS_TERM', NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . 'taxonomy_term');
-
+        $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . 'taxonomy_term', 'entity_id');
+        return new Neo4JDrupalReferenceFieldHandler($graph_node, $module_name, 'TAXONOMY_TERM_REFERENCE', $indexParam, 'tid', 'taxonomy_term');
     }
 
     return NULL;
@@ -81,14 +81,14 @@ abstract class Neo4JDrupalAbstractFieldHandler {
   /**
    * Constructor.
    *
-   * @param Node $node
+   * @param Node $graph_node
    * @param $type
-   * @param $referenceName
+   * @param $reference_name
    */
-  public function __construct(Node $node, $type, $referenceName) {
-    $this->node = $node;
+  public function __construct(Node $graph_node, $type, $reference_name) {
+    $this->node = $graph_node;
     $this->type = $type;
-    $this->referenceName = $referenceName;
+    $this->referenceName = $reference_name;
   }
 
   /**
@@ -146,19 +146,19 @@ class Neo4JDrupalSimpleValueFieldHandler extends Neo4JDrupalAbstractFieldHandler
   /**
    * Constructor.
    *
-   * @param Node $node
+   * @param Node $graph_node
    *  Graph node to attach to.
    * @param $type
    *  Type of graph node.
-   * @param $referenceName
+   * @param $reference_name
    *  Name of the relationship.
    * @param $indexName
    *  Name of the index.
    * @param $fieldValueKey
    *  Key of the value in the field array.
    */
-  public function __construct(Node $node, $type, $referenceName, $indexName, $fieldValueKey) {
-    parent::__construct($node, $type, $referenceName);
+  public function __construct(Node $graph_node, $type, $reference_name, $indexName, $fieldValueKey) {
+    parent::__construct($graph_node, $type, $reference_name);
     $this->indexName = $indexName;
     $this->fieldValueKey = $fieldValueKey;
   }
@@ -204,24 +204,29 @@ class Neo4JDrupalReferenceFieldHandler extends Neo4JDrupalAbstractFieldHandler {
    */
   protected $fieldValueKey;
 
+  protected $refEntityType;
+
   /**
    * Constructor.
    *
-   * @param Node $node
+   * @param Node $graph_node
    *  Graph node.
    * @param $type
    *  Type.
-   * @param $referenceName
+   * @param $reference_name
    *  Name of relationship.
-   * @param Neo4JDrupalIndexParam $indexParam
+   * @param Neo4JDrupalIndexParam $index_param
    *  Index.
    * @param $field_value_key
    *  Key of the value.
+   * @param $ref_entity_type
+   *  Referenced entity_type.
    */
-  public function __construct(Node $node, $type, $referenceName, Neo4JDrupalIndexParam $indexParam, $field_value_key) {
-    parent::__construct($node, $type, $referenceName);
-    $this->indexParam = $indexParam;
+  public function __construct(Node $graph_node, $type, $reference_name, Neo4JDrupalIndexParam $index_param, $field_value_key, $ref_entity_type) {
+    parent::__construct($graph_node, $type, $reference_name);
+    $this->indexParam = $index_param;
     $this->fieldValueKey = $field_value_key;
+    $this->refEntityType = $ref_entity_type;
   }
 
   /**
@@ -232,47 +237,19 @@ class Neo4JDrupalReferenceFieldHandler extends Neo4JDrupalAbstractFieldHandler {
 
     $referencedNode = $this->indexParam->getNode();
 
-    if () {
+    if (!$referencedNode) {
+      $referencedNode = neo4j_connector_force_index($this->refEntityType, $this->indexParam->value);
+    }
+
+    if ($referencedNode) {
       $this->node->relateTo($referencedNode, $this->referenceName)->save();
     }
-  }
-
-}
-
-/**
- * Class Neo4JDrupalTaxonomyFieldHandler
- * Taxonomy term reference field handler.
- */
-class Neo4JDrupalTaxonomyFieldHandler extends Neo4JDrupalAbstractFieldHandler {
-
-  /**
-   * Index name.
-   *
-   * @var string
-   */
-  public $index;
-
-  public function __construct(Node $node, $type, $referenceName, $index) {
-    parent::__construct($node, $type, $referenceName);
-    $this->index = $index;
-  }
-
-  public function processFieldItem(array $item) {
-    $term = taxonomy_term_load($item['tid']);
-
-    $termNode = Neo4JDrupal::sharedInstance()->getIndex($this->index)->findOne('entity_id', $term->tid);
-
-    if (!$termNode) {
-      $termNode = Neo4JDrupal::sharedInstance()->client->makeNode(array(
-        'title' => $term->name,
-        'entity_id' => $term->tid,
-        'entity_type' => 'taxonomy_term',
-      ));
-      $termNode->save();
-      Neo4JDrupal::sharedInstance()->getIndex($this->index)->add($termNode, 'entity_id', $term->tid);
+    else {
+      watchdog(__CLASS__, 'Unable to connect to reference. Type: @type, id: @id.', array(
+        '@type' => $this->refEntityType,
+        '@id' => $this->indexParam->value,
+      ), WATCHDOG_ERROR);
     }
-
-    $this->node->relateTo($termNode, $this->referenceName)->save();
   }
 
 }
