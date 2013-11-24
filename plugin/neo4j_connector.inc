@@ -127,10 +127,10 @@ class Neo4JDrupal {
   public function deleteEntity(Neo4JDrupalIndexParam $indexParam) {
     $this->deleteRelationships($indexParam);
 
-    if ($node = $indexParam->getNode()) {
-      $this->getIndex($indexParam->name)->remove($node);
-      $node->delete();
-      watchdog(__FUNCTION__, 'Graph node has been deleted: @nid', array('@nid' => $node->getId()));
+    if ($graph_node = $indexParam->getNode()) {
+      $this->getIndex($indexParam->name)->remove($graph_node);
+      $graph_node->delete();
+      watchdog(__FUNCTION__, 'Graph node has been deleted: @nid', array('@nid' => $graph_node->getId()));
     }
   }
 
@@ -165,8 +165,9 @@ class Neo4JDrupal {
    * @return Node
    */
   public function updateEntity($entity, $entity_type = 'node', array $properties, Neo4JDrupalIndexParam $indexParam = NULL) {
-    $this->deleteEntity($indexParam);
-    return $this->addEntity($entity, $entity_type, $properties, $indexParam);
+    $graph_node = $indexParam->getNode();
+    $this->addEntityFields($entity, $entity_type, $graph_node);
+    return $graph_node;
   }
 
   /**
