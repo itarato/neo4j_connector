@@ -24,7 +24,7 @@ function neo4j_connector_node_graph_info_page($node) {
  * @return string
  */
 function neo4j_connector_user_graph_info_page($account) {
-  $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . 'user', 'user_id', $account->uid);
+  $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . 'user', 'entity_id', $account->uid);
   return neo4j_connector_graph_node_info_page_content($indexParam);
 }
 
@@ -36,7 +36,7 @@ function neo4j_connector_user_graph_info_page($account) {
  * @return string
  */
 function neo4j_connector_term_graph_info_page($term) {
-  $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . 'taxonomy_term', 'tid', $term->tid);
+  $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . 'taxonomy_term', 'entity_id', $term->tid);
   return neo4j_connector_graph_node_info_page_content($indexParam);
 }
 

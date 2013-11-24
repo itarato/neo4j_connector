@@ -17,33 +17,33 @@ class Neo4JDrupalFieldHandlerFactory {
    *
    * @param $module_name
    *  Name of the module that defines the field.
-   * @param Node $node
+   * @param Node $graph_node
    *  Graph node.
    * @return Neo4JDrupalAbstractFieldHandler|NULL
    */
-  public static function getInstance($module_name, Node $node) {
+  public static function getInstance($module_name, Node $graph_node) {
     switch ($module_name) {
 
       case 'entityreference':
         $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . 'node', 'entity_id');
-        return new Neo4JDrupalReferenceFieldHandler($node, $module_name, 'NODE_REFERENCE', $indexParam, 'target_id');
+        return new Neo4JDrupalReferenceFieldHandler($graph_node, $module_name, 'NODE_REFERENCE', $indexParam, 'target_id');
 
       case 'node_reference':
         $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . 'node', 'entity_id');
-        return new Neo4JDrupalReferenceFieldHandler($node, $module_name, 'NODE_REFERENCE', $indexParam, 'nid');
+        return new Neo4JDrupalReferenceFieldHandler($graph_node, $module_name, 'NODE_REFERENCE', $indexParam, 'nid');
 
       case 'user_reference':
-        $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . 'user', 'user_id');
-        return new Neo4JDrupalReferenceFieldHandler($node, $module_name, 'USER_REFERENCE', $indexParam, 'uid');
+        $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . 'user', 'entity_id');
+        return new Neo4JDrupalReferenceFieldHandler($graph_node, $module_name, 'USER_REFERENCE', $indexParam, 'uid');
 
       case 'text':
-        return new Neo4JDrupalSimpleValueFieldHandler($node, $module_name, 'HAS_TEXT', 'text_field_index', 'value');
+        return new Neo4JDrupalSimpleValueFieldHandler($graph_node, $module_name, 'HAS_TEXT', 'text_field_index', 'value');
 
       case 'number':
-        return new Neo4JDrupalSimpleValueFieldHandler($node, $module_name, 'HAS_NUMBER', 'number_field_index', 'value');
+        return new Neo4JDrupalSimpleValueFieldHandler($graph_node, $module_name, 'HAS_NUMBER', 'number_field_index', 'value');
 
       case 'taxonomy':
-        return new Neo4JDrupalTaxonomyFieldHandler($node, $module_name, 'HAS_TERM', NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . 'taxonomy_term');
+        return new Neo4JDrupalTaxonomyFieldHandler($graph_node, $module_name, 'HAS_TERM', NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . 'taxonomy_term');
 
     }
 
@@ -229,7 +229,10 @@ class Neo4JDrupalReferenceFieldHandler extends Neo4JDrupalAbstractFieldHandler {
    */
   public function processFieldItem(array $item) {
     $this->indexParam->value = $item[$this->fieldValueKey];
-    if ($referencedNode = $this->indexParam->getNode()) {
+
+    $referencedNode = $this->indexParam->getNode();
+
+    if () {
       $this->node->relateTo($referencedNode, $this->referenceName)->save();
     }
   }
@@ -257,16 +260,16 @@ class Neo4JDrupalTaxonomyFieldHandler extends Neo4JDrupalAbstractFieldHandler {
   public function processFieldItem(array $item) {
     $term = taxonomy_term_load($item['tid']);
 
-    $termNode = Neo4JDrupal::sharedInstance()->getIndex($this->index)->findOne('tid', $term->tid);
+    $termNode = Neo4JDrupal::sharedInstance()->getIndex($this->index)->findOne('entity_id', $term->tid);
 
     if (!$termNode) {
       $termNode = Neo4JDrupal::sharedInstance()->client->makeNode(array(
         'title' => $term->name,
-        'tid' => $term->tid,
+        'entity_id' => $term->tid,
         'entity_type' => 'taxonomy_term',
       ));
       $termNode->save();
-      Neo4JDrupal::sharedInstance()->getIndex($this->index)->add($termNode, 'tid', $term->tid);
+      Neo4JDrupal::sharedInstance()->getIndex($this->index)->add($termNode, 'entity_id', $term->tid);
     }
 
     $this->node->relateTo($termNode, $this->referenceName)->save();

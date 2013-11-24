@@ -199,3 +199,21 @@ function _neo4j_connector_batch_op_reindex(&$context) {
   $finished = $index_stat['non-indexed'] == 0 ? 1 : $index_stat['non-indexed'] / $context['sandbox']['total'];
   $context['finished'] = $finished;
 }
+
+/**
+ * @param $entity_type
+ * @param $entity_id
+ *
+ * @return \Everyman\Neo4j\Node|FALSE
+ */
+function neo4j_connector_force_index($entity_type, $entity_id) {
+  $entity = entity_load_single($entity_type, $entity_id);
+  $node = neo4j_connector_add_entity_to_neo4j($entity, $entity_type);
+
+  if ($node) {
+    _neo4j_connector_index_mark($entity_type, $entity_id, NEO4J_CONNECTOR_INDEX_STATUS_INDEXED);
+    return $node;
+  }
+
+  return FALSE;
+}
