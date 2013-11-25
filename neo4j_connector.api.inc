@@ -15,4 +15,8 @@
  *  Type of the entity.
  */
 function hook_neo4j_connector_entity_properties_alter(&$property, $entity, $entity_type) {
+  // Example code:
+  if ($entity_type == 'my_entity') {
+    $property['foo'] = $entity->bar;
+  }
 }
