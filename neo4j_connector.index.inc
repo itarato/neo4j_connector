@@ -182,7 +182,15 @@ function neo4j_connector_index_get_stat() {
   foreach ($entity_types as $type => $info) {
     $content_num = db_query("SELECT COUNT(*) FROM {" . db_escape_table($info['base table']) . "}")->fetchField();
     $index_num = db_query("SELECT COUNT(*) FROM {neo4j_connector_index} WHERE entity_type = :type", array(':type' => $type))->fetchField();
-    $stat['entity-' . $type] = $index_num . ' / ' . $content_num;
+    $indexed_num = db_query("
+      SELECT COUNT(*)
+      FROM {neo4j_connector_index}
+      WHERE entity_type = :type AND status = :status
+    ", array(
+      ':type' => $type,
+      ':status' => NEO4J_CONNECTOR_INDEX_STATUS_INDEXED,
+    ))->fetchField();
+    $stat['entity-' . $type] = "$content_num (total) - $index_num (marked) - $indexed_num (indexed)";
   }
 
   return $stat;
