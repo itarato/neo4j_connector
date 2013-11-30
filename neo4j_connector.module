@@ -220,3 +220,43 @@ function neo4j_connector_send_to_index_without_fields($entity_type, $entity_id) 
 
   return FALSE;
 }
+
+/**
+ * Implements hook_cron().
+ */
+function neo4j_connector_cron() {
+  neo4j_connector_index_process_index();
+}
+
+function neo4j_connector_purge_db() {
+  // Delete all relationships.
+  Neo4JDrupal::sharedInstance()->query("
+    START n = node(*)
+    MATCH (n)-[r]->()
+    DELETE r
+  ");
+
+  // Delete all nodes.
+  Neo4JDrupal::sharedInstance()->query("
+    START n = node(*)
+    DELETE n
+  ");
+
+  neo4j_connector_index_delete_all();
+}
+
+function neo4j_connector_send_content_to_index() {
+  $entity_types = entity_get_info();
+
+  $operations = array();
+  foreach ($entity_types as $type => $info) {
+    $operations[] = array('_neo4j_connector_batch_op_mark_for_index', array($type));
+  }
+
+  $batch = array(
+    'operations' => $operations,
+    'title' => 'Re-indexing entities',
+  );
+
+  batch_set($batch);
+}

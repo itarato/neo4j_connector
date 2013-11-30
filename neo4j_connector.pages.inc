@@ -151,20 +151,7 @@ function neo4j_connector_form_purge_all_graph_db($form) {
  * @see neo4j_connector_form_purge_all_graph_db()
  */
 function neo4j_connector_form_purge_all_graph_db_submit($form, $form_state) {
-  // Delete all relationships.
-  Neo4JDrupal::sharedInstance()->query("
-    START n = node(*)
-    MATCH (n)-[r]->()
-    DELETE r
-  ");
-
-  // Delete all nodes.
-  Neo4JDrupal::sharedInstance()->query("
-    START n = node(*)
-    DELETE n
-  ");
-
-  neo4j_connector_index_delete_all();
+  neo4j_connector_purge_db();
 
   drupal_set_message(t('All relationships and nodes have been deleted.'));
 }
@@ -213,20 +200,7 @@ function neo4j_connector_form_mark_for_index($form, $form_state) {
 }
 
 function neo4j_connector_form_mark_for_index_submit($form, $form_state) {
-  $entity_types = entity_get_info();
-
-  $operations = array();
-  foreach ($entity_types as $type => $info) {
-    $operations[] = array('_neo4j_connector_batch_op_mark_for_index', array($type));
-  }
-
-  $batch = array(
-    'operations' => $operations,
-    'title' => 'Re-indexing entities',
-    'file' => 'neo4j_connector.pages.inc',
-  );
-
-  batch_set($batch);
+  neo4j_connector_send_content_to_index();
 }
 
 function neo4j_connector_form_reindex($form, $form_state) {
