@@ -4,6 +4,9 @@
  * Drush operations.
  */
 
+/**
+ * Implements hook_drush_command().
+ */
 function neo4j_connector_drush_command() {
   $commands = array();
 

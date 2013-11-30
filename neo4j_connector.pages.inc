@@ -51,7 +51,7 @@ function neo4j_connector_graph_node_info_page_content(Neo4JDrupalIndexParam $ind
   $graph_node = $indexParam->getNode();
 
   if (!$graph_node) {
-    return t('Cannot find associated graph node. Terribly sorry.');
+    return t('Cannot find associated graph node.');
   }
 
   $info = array();
