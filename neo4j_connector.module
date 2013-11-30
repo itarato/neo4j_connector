@@ -76,12 +76,12 @@ function neo4j_connector_menu() {
 
 function neo4j_connector_entity_insert($entity, $type) {
   list ($id,,) = entity_extract_ids($type, $entity);
-  neo4j_connector_index_update_in_index($type, $id);
+  neo4j_connector_index_send_to_index($type, $id);
 }
 
 function neo4j_connector_entity_update($entity, $type) {
   list ($id,,) = entity_extract_ids($type, $entity);
-  neo4j_connector_index_update_in_index($type, $id);
+  neo4j_connector_index_send_to_index($type, $id);
 }
 
 function neo4j_connector_entity_delete($entity, $type) {
@@ -171,7 +171,7 @@ function _neo4j_connector_batch_op_mark_for_index($entity_type, &$context) {
 
   if (!empty($result[$entity_type])) {
     foreach (array_keys($result[$entity_type]) as $entity_id) {
-      neo4j_connector_index_update_in_index($entity_type, $entity_id);
+      neo4j_connector_index_send_to_index($entity_type, $entity_id);
       $context['sandbox']['progress']++;
     }
   }

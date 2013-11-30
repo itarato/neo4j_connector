@@ -4,13 +4,22 @@
  * Indexing mechanism.
  */
 
+// Index statuses.
 define('NEO4J_CONNECTOR_INDEX_STATUS_NOT_EXIST', -1);
 define('NEO4J_CONNECTOR_INDEX_STATUS_INDEX', 0);
 define('NEO4J_CONNECTOR_INDEX_STATUS_INDEXED', 1);
 define('NEO4J_CONNECTOR_INDEX_STATUS_DELETE', 2);
 define('NEO4J_CONNECTOR_INDEX_STATUS_UPDATE', 3);
 
-function neo4j_connector_index_update_in_index($entity_type, $entity_id) {
+/**
+ * Mark entity for indexing to Neo4J.
+ *
+ * @param $entity_type
+ *  Entity type.
+ * @param $entity_id
+ *  Entity ID.
+ */
+function neo4j_connector_index_send_to_index($entity_type, $entity_id) {
   $index_status = neo4j_connector_index_get_index_status($entity_type, $entity_id);
 
   switch ($index_status) {
@@ -29,7 +38,7 @@ function neo4j_connector_index_update_in_index($entity_type, $entity_id) {
       break;
 
     default:
-      watchdog(__FUNCTION__, 'Unexpected index status @status for entity: @entity_type-@entity_id', array(
+      watchdog(__FUNCTION__, 'Unexpected index status @status for entity: @entity_type - @entity_id', array(
         '@status' => $index_status,
         '@entity_type' => $entity_type,
         '@entity_id' => $entity_id,
@@ -38,21 +47,21 @@ function neo4j_connector_index_update_in_index($entity_type, $entity_id) {
   }
 }
 
-function neo4j_connector_index_remove_from_index($entity_type, $entity_id) {
-  $index_status = neo4j_connector_index_get_index_status($entity_type, $entity_id);
-
-  switch ($index_status) {
-    case NEO4J_CONNECTOR_INDEX_STATUS_NOT_EXIST:
-    case NEO4J_CONNECTOR_INDEX_STATUS_DELETE:
-      // Do nothing, it does not exist already.
-      break;
-
-    default:
-      _neo4j_connector_index_mark($entity_type, $entity_id, NEO4J_CONNECTOR_INDEX_STATUS_DELETE);
-      break;
-  }
-}
-
+/**
+ * Returns the index status of an entity.
+ *
+ * @param $entity_type
+ *  Entity type.
+ * @param $entity_id
+ *  Entity ID.
+ * @return int
+ *  Index status code. Examples:
+ *    NEO4J_CONNECTOR_INDEX_STATUS_NOT_EXIST
+ *    NEO4J_CONNECTOR_INDEX_STATUS_INDEX
+ *    NEO4J_CONNECTOR_INDEX_STATUS_INDEXED
+ *    NEO4J_CONNECTOR_INDEX_STATUS_DELETE
+ *    NEO4J_CONNECTOR_INDEX_STATUS_UPDATE
+ */
 function neo4j_connector_index_get_index_status($entity_type, $entity_id) {
   $result = db_query("
     SELECT status
@@ -63,6 +72,14 @@ function neo4j_connector_index_get_index_status($entity_type, $entity_id) {
   return $result === FALSE ? NEO4J_CONNECTOR_INDEX_STATUS_NOT_EXIST : $result;
 }
 
+/**
+ * Delete entity from the index. At this point the entity must not have the graph node in the db.
+ *
+ * @param $entity_type
+ *  Entity type.
+ * @param $entity_id
+ *  Entity ID.
+ */
 function neo4j_connector_index_delete($entity_type, $entity_id) {
   db_query("
     DELETE FROM {neo4j_connector_index}
@@ -70,10 +87,24 @@ function neo4j_connector_index_delete($entity_type, $entity_id) {
   ", array(':entity_type' => $entity_type, ':entity_id' => $entity_id));
 }
 
+/**
+ * Delete all index. At this point nothing should be in the graph db.
+ */
 function neo4j_connector_index_delete_all() {
   db_query("DELETE FROM {neo4j_connector_index}");
+  watchdog(__FUNCTION__, 'Index has been purged.', array(), WATCHDOG_INFO);
 }
 
+/**
+ * Mark entity in the index. Valid statuses are defined as NEO4J_CONNECTOR_INDEX_STATUS_<SUFFIX>.
+ *
+ * @param $entity_type
+ *  Entity type.
+ * @param $entity_id
+ *  Entity ID.
+ * @param $index_status
+ *  Index status code.
+ */
 function _neo4j_connector_index_mark($entity_type, $entity_id, $index_status) {
   $result = db_query("
     SELECT *
@@ -102,6 +133,12 @@ function _neo4j_connector_index_mark($entity_type, $entity_id, $index_status) {
   }
 }
 
+/**
+ * Processing elements from the index table: indexing or deleting.
+ *
+ * @param int|NULL $limit
+ *  Number of items to process.
+ */
 function neo4j_connector_index_process_index($limit = NULL) {
   if (!$limit) {
     $limit = variable_get('neo4j_connector_index_process_limit', 100);
@@ -121,7 +158,6 @@ function neo4j_connector_index_process_index($limit = NULL) {
     // In that case we need to pre-index the referenced item (without fields) in order to be able to reference that.
     // That action will change the referenced item status to UPDATED. Since here the query is already in PHP
     // we have to make sure we fetch the up-to-date status.
-
     $status = neo4j_connector_index_get_index_status($record->entity_type, $record->entity_id);
 
     switch ($status) {
@@ -163,6 +199,12 @@ function neo4j_connector_index_process_index($limit = NULL) {
   }
 }
 
+/**
+ * Index statistics.
+ *
+ * @return array
+ *  Key - value array of statistics information.
+ */
 function neo4j_connector_index_get_stat() {
   $stat = array();
 
