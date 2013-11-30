@@ -84,14 +84,21 @@ class Neo4JDrupal {
    *  Entity type string.
    * @param array $properties
    *  Properties array to store on the graph node.
-   * @param Neo4JDrupalIndexParam $indexParam
+   * @param Neo4JDrupalIndexParam $index_param
    *  Index to locate the new node.
+   * @param $add_fields
+   *  Boolean flag - if processing fields is necessary. Default is TRUE.
+   *
    * @return Node
    *  Created graph node object.
    */
-  public function addEntity($entity, $entity_type = 'node', array $properties, Neo4JDrupalIndexParam $indexParam = NULL) {
-    $node = $this->addGraphNode($properties, $indexParam);
-    $this->addEntityFields($entity, $entity_type, $node);
+  public function addEntity($entity, $entity_type = 'node', array $properties, Neo4JDrupalIndexParam $index_param = NULL, $add_fields = TRUE) {
+    $node = $this->addGraphNode($properties, $index_param);
+
+    if ($add_fields) {
+      $this->addEntityFields($entity, $entity_type, $node);
+    }
+
     return $node;
   }
 
@@ -159,13 +166,13 @@ class Neo4JDrupal {
    *  Entity type.
    * @param array $properties
    *  Properties to store.
-   * @param Neo4JDrupalIndexParam $indexParam
+   * @param Neo4JDrupalIndexParam $index_param
    *  Index.
    *
    * @return Node
    */
-  public function updateEntity($entity, $entity_type = 'node', array $properties, Neo4JDrupalIndexParam $indexParam = NULL) {
-    $graph_node = $indexParam->getNode();
+  public function updateEntity($entity, $entity_type = 'node', array $properties, Neo4JDrupalIndexParam $index_param = NULL) {
+    $graph_node = $index_param->getNode();
     $this->addEntityFields($entity, $entity_type, $graph_node);
     return $graph_node;
   }

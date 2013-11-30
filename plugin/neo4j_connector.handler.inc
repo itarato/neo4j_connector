@@ -238,7 +238,7 @@ class Neo4JDrupalReferenceFieldHandler extends Neo4JDrupalAbstractFieldHandler {
     $referencedNode = $this->indexParam->getNode();
 
     if (!$referencedNode) {
-      $referencedNode = neo4j_connector_force_index($this->refEntityType, $this->indexParam->value);
+      $referencedNode = neo4j_connector_send_to_index_without_fields($this->refEntityType, $this->indexParam->value);
     }
 
     if ($referencedNode) {

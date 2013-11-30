@@ -117,7 +117,14 @@ function neo4j_connector_index_process_index($limit = NULL) {
   foreach ($records as $record) {
     $entity = entity_load_single($record->entity_type, $record->entity_id);
 
-    switch ($record->status) {
+    // It's necessary to re-load the status: when indexing a content it might have a reference that is not indexed.
+    // In that case we need to pre-index the referenced item (without fields) in order to be able to reference that.
+    // That action will change the referenced item status to UPDATED. Since here the query is already in PHP
+    // we have to make sure we fetch the up-to-date status.
+
+    $status = neo4j_connector_index_get_index_status($record->entity_type, $record->entity_id);
+
+    switch ($status) {
       case NEO4J_CONNECTOR_INDEX_STATUS_INDEX:
         $graph_node = neo4j_connector_add_entity_to_neo4j($entity, $record->entity_type);
         break;
@@ -140,7 +147,7 @@ function neo4j_connector_index_process_index($limit = NULL) {
 
       default:
         watchdog(__FUNCTION__, 'Unexpected index status @status for entity: @entity_type-@entity_id', array(
-          '@status' => $record->status,
+          '@status' => $status,
           '@entity_type' => $record->entity_type,
           '@entity_id' => $record->entity_id,
         ), WATCHDOG_ERROR);

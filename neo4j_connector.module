@@ -99,14 +99,14 @@ function neo4j_connector_entity_delete($entity, $type) {
  *
  * @return \Everyman\Neo4j\Node
  */
-function neo4j_connector_add_entity_to_neo4j($entity, $type) {
+function neo4j_connector_add_entity_to_neo4j($entity, $type, $include_fields = TRUE) {
   list($id, ,) = entity_extract_ids($type, $entity);
   $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . $type, 'entity_id', $id);
 
   $properties = array();
   drupal_alter('neo4j_connector_entity_properties', $properties, $entity, $type);
 
-  return Neo4JDrupal::sharedInstance()->addEntity($entity, $type, $properties, $indexParam);
+  return Neo4JDrupal::sharedInstance()->addEntity($entity, $type, $properties, $indexParam, $include_fields);
 }
 
 /**
@@ -206,13 +206,16 @@ function _neo4j_connector_batch_op_reindex(&$context) {
  *
  * @return \Everyman\Neo4j\Node|FALSE
  */
-function neo4j_connector_force_index($entity_type, $entity_id) {
+function neo4j_connector_send_to_index_without_fields($entity_type, $entity_id) {
   $entity = entity_load_single($entity_type, $entity_id);
-  $node = neo4j_connector_add_entity_to_neo4j($entity, $entity_type);
+  $node = neo4j_connector_add_entity_to_neo4j($entity, $entity_type, FALSE);
 
   if ($node) {
-    _neo4j_connector_index_mark($entity_type, $entity_id, NEO4J_CONNECTOR_INDEX_STATUS_INDEXED);
+    _neo4j_connector_index_mark($entity_type, $entity_id, NEO4J_CONNECTOR_INDEX_STATUS_UPDATE);
     return $node;
+  }
+  else {
+    watchdog(__FUNCTION__, 'Graph node could not be created. Type: @type id: @id.', array('@type' => $entity_type, '@id' => $entity_id), WATCHDOG_ERROR);
   }
 
   return FALSE;
