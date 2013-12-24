@@ -7,12 +7,20 @@
 use Everyman\Neo4j\Client;
 use Everyman\Neo4j\Index\NodeIndex;
 use Everyman\Neo4j\Node;
+use Everyman\Neo4j\Cypher\Query;
 
 /**
  * Class Neo4JDrupal
  * Main connector to the Neo4J database.
  */
 class Neo4JDrupal {
+
+  /**
+   * Shared instance.
+   *
+   * @var Neo4JDrupal
+   */
+  protected static $sharedInstance;
 
   /**
    * Main DB client.
@@ -22,11 +30,41 @@ class Neo4JDrupal {
   public $client;
 
   /**
+   * Class of graph node index. Should be NodeIndex or subtype of it.
+   *
+   * @var string
+   */
+  public $nodeIndexClass;
+
+  /**
+   * Class of the query. Should be Query or subtype of it.
+   *
+   * @var string
+   */
+  public $queryClass;
+
+  /**
    * Constructor.
    * Use Neo4JDrupal::sharedInstance() instead.
    */
-  public function __construct() {
-    $this->client = new Client(variable_get('neo4j_connector_host', 'localhost'), variable_get('neo4j_connector_port', '7474'));
+  public function __construct(Client $client, $node_index_class, $query_class) {
+    $this->client = $client;
+    $this->nodeIndexClass = $node_index_class;
+    $this->queryClass = $query_class;
+  }
+
+  /**
+   * Directly creates a shared instance which is used throughout the system.
+   * Use this if you need a special setup.
+   *
+   * @param Client $client
+   * @param $node_index_class
+   * @param $query_class
+   * @return Neo4JDrupal
+   */
+  public static function createSharedInstance(Client $client, $node_index_class, $query_class) {
+    self::$sharedInstance = new Neo4JDrupal($client, $node_index_class, $query_class);
+    return self::$sharedInstance;
   }
 
   /**
@@ -35,12 +73,12 @@ class Neo4JDrupal {
    * @return Neo4JDrupal
    */
   public static function sharedInstance() {
-    static $instance = NULL;
-    if (!$instance) {
-      $instance = new Neo4JDrupal();
+    if (!self::$sharedInstance) {
+      $client = new Client(variable_get('neo4j_connector_host', 'localhost'), variable_get('neo4j_connector_port', '7474'));
+      self::$sharedInstance = new Neo4JDrupal($client, 'Everyman\Neo4j\Index\NodeIndex', 'Everyman\Neo4j\Cypher\Query');
     }
 
-    return $instance;
+    return self::$sharedInstance;
   }
 
   /**
@@ -53,7 +91,7 @@ class Neo4JDrupal {
     static $indexes = array();
 
     if (!isset($indexes[$index_name])) {
-      $indexes[$index_name] = new NodeIndex($this->client, $index_name);
+      $indexes[$index_name] = new $this->nodeIndexClass($this->client, $index_name);
       $indexes[$index_name]->save();
     }
 
@@ -70,7 +108,7 @@ class Neo4JDrupal {
    * @return \Everyman\Neo4j\Query\ResultSet
    */
   public function query($template, $vars = array()) {
-    $query = new Everyman\Neo4j\Cypher\Query($this->client, $template, $vars);
+    $query = new $this->queryClass($this->client, $template, $vars);
     return $query->getResultSet();
   }
 

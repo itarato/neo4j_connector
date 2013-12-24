@@ -6,3 +6,4 @@ dependencies[] = entity
 
 files[] = plugin/neo4j_connector.inc
 files[] = plugin/neo4j_connector.handler.inc
+files[] = tests/neo4j_connector.test
