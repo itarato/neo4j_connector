@@ -172,7 +172,7 @@ class Neo4JDrupal {
   public function deleteEntity(Neo4JDrupalIndexParam $indexParam) {
     $this->deleteRelationships($indexParam);
 
-    if ($graph_node = $indexParam->getNode()) {
+    if ($graph_node = $this->getGraphNodeOfIndex($indexParam)) {
       $this->getIndex($indexParam->name)->remove($graph_node);
       $graph_node->delete();
       watchdog(__FUNCTION__, 'Graph node has been deleted: @nid', array('@nid' => $graph_node->getId()));
@@ -186,7 +186,7 @@ class Neo4JDrupal {
    *  Index.
    */
   public function deleteRelationships(Neo4JDrupalIndexParam $indexParam) {
-    if ($node = $indexParam->getNode()) {
+    if ($node = $this->getGraphNodeOfIndex($indexParam)) {
       $relationships = $node->getRelationships();
       foreach ($relationships as $relationship) {
         $relationship->delete();
@@ -210,7 +210,7 @@ class Neo4JDrupal {
    * @return Node
    */
   public function updateEntity($entity, $entity_type = 'node', array $properties, Neo4JDrupalIndexParam $index_param = NULL) {
-    $graph_node = $index_param->getNode();
+    $graph_node = $this->getGraphNodeOfIndex($index_param);
     $this->addEntityFields($entity, $entity_type, $graph_node);
     return $graph_node;
   }
@@ -234,6 +234,33 @@ class Neo4JDrupal {
         $neo4jFieldHandler->processFieldData($entity, $entity_type, $field_instance['field_name']);
       }
     }
+  }
+
+  /**
+   * Fetch a graph node of a Drupal entity.
+   *
+   * @param $entity_type
+   *  Entity type string.
+   * @param $id
+   *  Entity id integer.
+   * @return bool|Node
+   *  Graph node object, or FALSE if not exist.
+   */
+  public function getGraphNodeOfEntity($entity_type, $id) {
+    $index_param = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . $entity_type, 'entity_id', $id);
+    return $this->getGraphNodeOfIndex($index_param);
+  }
+
+  /**
+   * @param Neo4JDrupalIndexParam $index_param
+   * @return bool|Node
+   */
+  public function getGraphNodeOfIndex(Neo4JDrupalIndexParam $index_param) {
+    $propCont = $this->getIndex($index_param->name)->findOne($index_param->key, $index_param->value);
+    if ($propCont) {
+      return $this->client->getNode($propCont->getId());
+    }
+    return FALSE;
   }
 
 }
@@ -276,19 +303,6 @@ class Neo4JDrupalIndexParam {
     $this->name = $name;
     $this->key = $key;
     $this->value = $value;
-  }
-
-  /**
-   * Lookup the indexed graph node.
-   *
-   * @return Node|NULL
-   */
-  public function getNode() {
-    $propCont = Neo4JDrupal::sharedInstance()->getIndex($this->name)->findOne($this->key, $this->value);
-    if ($propCont) {
-      return Neo4JDrupal::sharedInstance()->client->getNode($propCont->getId());
-    }
-    return FALSE;
   }
 
 }

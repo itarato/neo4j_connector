@@ -27,7 +27,7 @@ class Neo4JDrupalConnectorTestCase extends DrupalWebTestCase {
     );
   }
 
-  public function testNodeCreatedAndIndexed() {
+  public function testGraphNodeCreatedAndIndexed() {
     $this->drupalCreateNode();
 
     $clientHistory = Neo4JDrupalTestHistory::getCallsFor(
@@ -42,7 +42,11 @@ class Neo4JDrupalConnectorTestCase extends DrupalWebTestCase {
       'MockNeo4JDrupalClient',
       'makeNode'
     );
-    $this->assertTrue(count($clientHistory) > 0, 'The API called the graph node creation.');
+    $this->assertTrue(is_array($clientHistory) && count($clientHistory) > 0, 'The API called the graph node creation.');
+  }
+
+  public function testGraphNodeRead() {
+
   }
 
 }

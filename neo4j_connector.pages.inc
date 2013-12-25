@@ -12,8 +12,7 @@
  * @return string
  */
 function neo4j_connector_node_graph_info_page($node) {
-  $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . 'node', 'entity_id', $node->nid);
-  return neo4j_connector_graph_node_info_page_content($indexParam);
+  return neo4j_connector_graph_info_page_content('node', $node->nid);
 }
 
 /**
@@ -24,8 +23,7 @@ function neo4j_connector_node_graph_info_page($node) {
  * @return string
  */
 function neo4j_connector_user_graph_info_page($account) {
-  $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . 'user', 'entity_id', $account->uid);
-  return neo4j_connector_graph_node_info_page_content($indexParam);
+  return neo4j_connector_graph_info_page_content('user', $account->uid);
 }
 
 /**
@@ -36,19 +34,18 @@ function neo4j_connector_user_graph_info_page($account) {
  * @return string
  */
 function neo4j_connector_term_graph_info_page($term) {
-  $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . 'taxonomy_term', 'entity_id', $term->tid);
-  return neo4j_connector_graph_node_info_page_content($indexParam);
+  return neo4j_connector_graph_info_page_content('taxonomy_term', $term->tid);
 }
 
 /**
  * Helper to generate a graph info about an entity.
  *
- * @param $indexParam
- *  Index that identifies the graph node.
- * @return string
+ * @param $entity_type
+ * @param $id
+ * @return null|string
  */
-function neo4j_connector_graph_node_info_page_content(Neo4JDrupalIndexParam $indexParam) {
-  $graph_node = $indexParam->getNode();
+function neo4j_connector_graph_info_page_content($entity_type, $id) {
+  $graph_node = Neo4JDrupal::sharedInstance()->getGraphNodeOfEntity($entity_type, $id);
 
   if (!$graph_node) {
     return t('Cannot find associated graph node.');
@@ -58,7 +55,7 @@ function neo4j_connector_graph_node_info_page_content(Neo4JDrupalIndexParam $ind
   $info[] = t('Graph node ID: <strong>@nodeid</strong>', array('@nodeid' => $graph_node->getId()));
   $data_browser_link = 'http://localhost:7474/webadmin/#/data/search/' . $graph_node->getId() . '/';
   $info[] = t('Data browser link') . ': ' . l($data_browser_link, $data_browser_link);
-  $info[] = '<pre>START n=node:' . $indexParam->name . '(' . $indexParam->key . '="' . $indexParam->value . '") RETURN n;</pre>';
+  $info[] = '<pre>START n=node:' . NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . $entity_type . '(entity_id="' . $id . '") RETURN n;</pre>';
 
   return theme('item_list', array('items' => $info));
 }

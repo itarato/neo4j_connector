@@ -21,13 +21,14 @@ class neo4j_connector_raw_filter_handler extends views_handler_filter {
     }
 
     if (($neo4j_argument = $this->options['neo4j_argument']) != '') {
-      if (!($arg = (int) arg($neo4j_argument))) {
+      if (!($arg_nid = (int) arg($neo4j_argument))) {
         return;
       }
 
-      $index = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . 'node', 'entity_id', $arg);
+      $index = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . 'node', 'entity_id', $arg_nid);
+      $context_graph_node = Neo4JDrupal::sharedInstance()->getGraphNodeOfEntity('node', $arg_nid);
       if ($index) {
-        $neo4j_query = 'START n=node(' . $index->getNode()->getId() . ') ' . $neo4j_query;
+        $neo4j_query = 'START n=node(' . $context_graph_node->getId() . ') ' . $neo4j_query;
       }
     }
 
