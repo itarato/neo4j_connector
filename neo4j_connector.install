@@ -13,8 +13,8 @@ function neo4j_connector_schema() {
       'description' => 'Index for Neo4J db content.',
       'fields' => array(
         'entity_id' => array(
-          'type' => 'int',
-          'unsigned' => TRUE,
+          'type' => 'varchar',
+          'length' => 255,
           'not null' => TRUE,
           'description' => 'Entity ID.',
         ),
