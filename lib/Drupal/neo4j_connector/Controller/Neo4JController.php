@@ -11,6 +11,7 @@ namespace Drupal\neo4j_connector\Controller;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\neo4j_connector\Neo4JDrupal;
 
 class Neo4JController extends ControllerBase implements ContainerInjectionInterface {
 
@@ -18,13 +19,13 @@ class Neo4JController extends ControllerBase implements ContainerInjectionInterf
   }
 
   public function adminSettings() {
-//    try {
-//      Neo4JDrupal::sharedInstance()->client->getServerInfo();
-//      drupal_set_message(t('Connection with Neo4J has been established.'));
-//    }
-//    catch (Exception $e) {
-//      drupal_set_message(t('Cannot connect to the Neo4J database. Please, check the connection details.'), 'warning');
-//    }
+    try {
+      Neo4JDrupal::sharedInstance()->client->getServerInfo();
+      drupal_set_message(t('Connection with Neo4J has been established.'));
+    }
+    catch (Exception $e) {
+      drupal_set_message(t('Cannot connect to the Neo4J database. Please, check the connection details.'), 'warning');
+    }
 
     $settings_form = \Drupal::formBuilder()->getForm('Drupal\neo4j_connector\Form\Neo4JAdminForm');
     $purge_form = \Drupal::formBuilder()->getForm('Drupal\neo4j_connector\Form\Neo4JPurgeDBForm');

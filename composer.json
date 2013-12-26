@@ -1,1 +1,10 @@
-{"require":{"everyman/neo4jphp":"dev-master"}}
+{
+  "name": "Neo4J Drupal connector",
+  "description": "Neo4J connector module for Neo4J",
+  "require": {
+    "everyman/neo4jphp": "dev-master"
+  },
+  "config": {
+    "vendor-dir": "lib/vendor"
+  }
+}

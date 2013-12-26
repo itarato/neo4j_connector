@@ -4,6 +4,8 @@
  * Neo4J connector classes and interfaces.
  */
 
+namespace Drupal\neo4j_connector;
+
 use Everyman\Neo4j\Client;
 use Everyman\Neo4j\Index\NodeIndex;
 use Everyman\Neo4j\Node;
