@@ -31,6 +31,9 @@ class Neo4JReindexForm extends FormBase {
     $form['submit'] = array(
       '#type' => 'submit',
       '#value' => t('Re-index'),
+      // Markup has no nesting. This div makes sure it's the first child and properly aligned.
+      '#prefix' => '<div>',
+      '#suffix' => '</div>',
     );
 
     return $form;

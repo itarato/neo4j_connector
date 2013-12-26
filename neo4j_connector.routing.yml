@@ -1,7 +1,23 @@
+neo4j_connector.admin:
+  path: '/admin/config/neo4j'
+  defaults:
+    _content: '\Drupal\system\Controller\SystemController::systemAdminMenuBlockPage'
+    _title: 'Neo4J admin'
+  requirements:
+    _permission: 'administer neo4j connector configuration'
+
 neo4j_connector.settings:
   path: '/admin/config/neo4j/settings'
   defaults:
     _content: '\Drupal\neo4j_connector\Controller\Neo4JController::adminSettings'
     _title: 'Neo4J-connector settings'
+  requirements:
+    _permission: 'administer neo4j connector configuration'
+
+neo4j_connector.console:
+  path: '/admin/config/neo4j/console'
+  defaults:
+    _title: 'Neo4J Cypher query console'
+    _form: 'Drupal\neo4j_connector\Form\Neo4JConsoleForm'
   requirements:
     _permission: 'administer neo4j connector configuration'

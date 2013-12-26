@@ -50,28 +50,21 @@ function neo4j_connector_menu() {
     'admin/config/neo4j' => array(
       'title' => 'Neo4J',
       'description' => 'Administration tools.',
-      'page callback' => 'system_admin_menu_block_page',
-      'access arguments' => array('access administration pages'),
-      'file' => 'system.admin.inc',
-      'file path' => drupal_get_path('module', 'system'),
+      'route_name' => 'neo4j_connector.admin',
     ),
 
     // Regenerate nodes / users.
     'admin/config/neo4j/settings' => array(
       'title' => 'Admin settings',
-      'page callback' => 'neo4j_connector_admin_settings_page',
-      'file' => 'neo4j_connector.pages.inc',
-      'access callback' => TRUE,
       'description' => t('Neo4J settings'),
+      'route_name' => 'neo4j_connector.settings',
     ),
 
     // 'Eval' console.
     'admin/config/neo4j/console' => array(
       'title' => 'Console',
-      'page callback' => 'neo4j_connector_console_page',
-      'file' => 'neo4j_connector.pages.inc',
-      'access callback' => TRUE,
       'description' => t('DB console'),
+      'route_name' => 'neo4j_connector.console',
     ),
   );
 }

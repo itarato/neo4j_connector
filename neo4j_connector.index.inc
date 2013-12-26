@@ -219,10 +219,16 @@ function neo4j_connector_index_get_stat() {
   $stat['non-indexed'] = $stat['total'] - $stat['indexed'];
 
   // Entity content details.
-  $entity_types = entity_get_info();
+  $entity_types = Drupal::entityManager()->getDefinitions();
 
   foreach ($entity_types as $type => $info) {
-    $content_num = db_query("SELECT COUNT(*) FROM {" . db_escape_table($info['base table']) . "}")->fetchField();
+    if (!isset($info['base_table'])) {
+      // @todo Figure out what happens with table-less entities.
+      $stat['entity-' . $type] = 'unknown';
+      continue;
+    }
+
+    $content_num = db_query("SELECT COUNT(*) FROM {" . db_escape_table($info['base_table']) . "}")->fetchField();
     $index_num = db_query("SELECT COUNT(*) FROM {neo4j_connector_index} WHERE entity_type = :type", array(':type' => $type))->fetchField();
     $indexed_num = db_query("
       SELECT COUNT(*)
