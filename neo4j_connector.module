@@ -4,7 +4,9 @@
  * Main module functions.
  */
 
-require_once __DIR__ . '/vendor/autoload.php';
+use Drupal\Core\Entity\EntityInterface;
+
+//require_once __DIR__ . '/vendor/autoload.php';
 require_once __DIR__ . '/neo4j_connector.index.inc';
 
 // Index names.
@@ -74,23 +76,19 @@ function neo4j_connector_menu() {
   );
 }
 
-function neo4j_connector_entity_insert($entity, $type) {
-  list ($id,,) = entity_extract_ids($type, $entity);
-  neo4j_connector_index_send_to_index($type, $id);
+function neo4j_connector_entity_insert(EntityInterface $entity) {
+  neo4j_connector_index_send_to_index($entity->entityType(), $entity->id());
 }
 
-function neo4j_connector_entity_update($entity, $type) {
-  list ($id,,) = entity_extract_ids($type, $entity);
-  neo4j_connector_index_send_to_index($type, $id);
+function neo4j_connector_entity_update(EntityInterface $entity) {
+  neo4j_connector_index_send_to_index($entity->entityType(), $entity->id());
 }
 
-function neo4j_connector_entity_delete($entity, $type) {
-  list ($id,,) = entity_extract_ids($type, $entity);
+function neo4j_connector_entity_delete(EntityInterface $entity) {
+  $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . $entity->entityType(), 'entity_id', $entity->id());
+  Neo4JDrupal::sharedInstance()->deleteEntity($entity, $entity->entityType(), $indexParam);
 
-  $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . $type, 'entity_id', $id);
-  Neo4JDrupal::sharedInstance()->deleteEntity($entity, $type, $indexParam);
-
-  neo4j_connector_index_delete($type, $id);
+  neo4j_connector_index_delete($entity->entityType(), $entity->id());
 }
 
 /**

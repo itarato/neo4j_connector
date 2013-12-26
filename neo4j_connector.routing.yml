@@ -1,0 +1,7 @@
+neo4j_connector.settings:
+  path: '/admin/config/neo4j/settings'
+  defaults:
+    _content: '\Drupal\neo4j_connector\Controller\Neo4JController::adminSettings'
+    _title: 'Neo4J-connector settings'
+  requirements:
+    _permission: 'administer neo4j connector configuration'
