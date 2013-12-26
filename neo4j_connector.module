@@ -143,7 +143,7 @@ function neo4j_connector_cron_queue_info() {
   );
 }
 
-function _neo4j_connector_batch_op_mark_for_index($entity_type, &$context) {
+function _neo4j_connector_batch_op_mark_for_index($entity_type, $entity_id_key, &$context) {
   if (empty($context['sandbox'])) {
     $context['sandbox']['progress'] = 0;
 
@@ -155,7 +155,7 @@ function _neo4j_connector_batch_op_mark_for_index($entity_type, &$context) {
 
   $query = \Drupal::entityQuery($entity_type);
   $query->range($context['sandbox']['progress'], NEO4J_CONNECTOR_REINDEX_LIMIT);
-  $query->sort('entity_id');
+  $query->sort($entity_id_key);
   $result = $query->execute();
 
   foreach ($result as $entity_id) {
@@ -237,7 +237,12 @@ function neo4j_connector_send_content_to_index() {
 
   $operations = array();
   foreach ($entity_types as $type => $info) {
-    $operations[] = array('_neo4j_connector_batch_op_mark_for_index', array($type));
+    if (!isset($info['entity_keys']['id'])) {
+      // If there is no id entity key than it's probably not for querying. (via entity query)
+      // @todo keep an eye on it - maybe there will be a D8 solution sometime.
+      continue;
+    }
+    $operations[] = array('_neo4j_connector_batch_op_mark_for_index', array($type, $info['entity_keys']['id']));
   }
 
   $batch = array(
