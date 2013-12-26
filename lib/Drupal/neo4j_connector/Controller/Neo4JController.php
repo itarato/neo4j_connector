@@ -27,8 +27,11 @@ class Neo4JController extends ControllerBase implements ContainerInjectionInterf
 //    }
 
     $settings_form = \Drupal::formBuilder()->getForm('Drupal\neo4j_connector\Form\Neo4JAdminForm');
+    $purge_form = \Drupal::formBuilder()->getForm('Drupal\neo4j_connector\Form\Neo4JPurgeDBForm');
 
-    return drupal_render($settings_form);
+    return
+      drupal_render($settings_form) .
+      drupal_render($purge_form);
   }
 
   public static function create(ContainerInterface $container) {
