@@ -6,6 +6,8 @@
 
 namespace Drupal\neo4j_connector;
 
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\field\Field;
 use Everyman\Neo4j\Client;
 use Everyman\Neo4j\Index\NodeIndex;
 use Everyman\Neo4j\Node;
@@ -27,7 +29,7 @@ class Neo4JDrupal {
   /**
    * Main DB client.
    *
-   * @var Everyman\Neo4j\Client
+   * @var Client
    */
   public $client;
 
@@ -76,7 +78,8 @@ class Neo4JDrupal {
    */
   public static function sharedInstance() {
     if (!self::$sharedInstance) {
-      $client = new Client(variable_get('neo4j_connector_host', 'localhost'), variable_get('neo4j_connector_port', '7474'));
+      $config = \Drupal::config('neo4j_connector.site');
+      $client = new Client($config->get('neo4j_connector_host'), $config->get('neo4j_connector_port'));
       self::$sharedInstance = new Neo4JDrupal($client, 'Everyman\Neo4j\Index\NodeIndex', 'Everyman\Neo4j\Cypher\Query');
     }
 
@@ -212,6 +215,7 @@ class Neo4JDrupal {
    * @return Node
    */
   public function updateEntity($entity, $entity_type = 'node', array $properties, Neo4JDrupalIndexParam $index_param = NULL) {
+    // @todo take care of properties.
     $graph_node = $this->getGraphNodeOfIndex($index_param);
     $this->addEntityFields($entity, $entity_type, $graph_node);
     return $graph_node;
@@ -227,13 +231,13 @@ class Neo4JDrupal {
    * @param $node
    *  Graph node.
    */
-  public function addEntityFields($entity, $entity_type, Node $node) {
-    list(, , $bundle) = entity_extract_ids($entity_type, $entity);
-    $field_instances = field_info_instances($entity_type, $bundle);
+  public function addEntityFields(EntityInterface $entity, $entity_type, Node $node) {
+    // @todo check if it's not entity instance but entity bundle instance.
+    $field_instances = Field::fieldInfo()->getBundleInstances($entity->entityType(), $entity->bundle());
     foreach ($field_instances as $field_instance) {
-      $field_info = field_info_field($field_instance['field_name']);
-      if ($neo4jFieldHandler = Neo4JDrupalFieldHandlerFactory::getInstance($field_info['module'], $node)) {
-        $neo4jFieldHandler->processFieldData($entity, $entity_type, $field_instance['field_name']);
+      $field_info = Field::fieldInfo()->getInstance($entity->entityType(), $entity->bundle(), $field_instance->field_name);
+      if ($neo4jFieldHandler = Neo4JDrupalFieldHandlerFactory::getInstance($field_info->module, $node)) {
+        $neo4jFieldHandler->processFieldData($entity, $entity_type, $field_instance->field_name);
       }
     }
   }
@@ -263,48 +267,6 @@ class Neo4JDrupal {
       return $this->client->getNode($propCont->getId());
     }
     return FALSE;
-  }
-
-}
-
-/**
- * Class Neo4JDrupalIndexParam
- * Defines a unique locator in the graph db. Used to identify Drupal items.
- */
-class Neo4JDrupalIndexParam {
-
-  /**
-   * Name of the index.
-   *
-   * @var string
-   */
-  public $name;
-
-  /**
-   * Key name.
-   *
-   * @var string
-   */
-  public $key;
-
-  /**
-   * Value.
-   *
-   * @var string|number
-   */
-  public $value;
-
-  /**
-   * Constructor.
-   *
-   * @param string $name
-   * @param string $key
-   * @param string $value
-   */
-  public function __construct($name = NULL, $key = NULL, $value = NULL) {
-    $this->name = $name;
-    $this->key = $key;
-    $this->value = $value;
   }
 
 }

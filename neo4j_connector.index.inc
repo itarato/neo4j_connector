@@ -152,7 +152,7 @@ function neo4j_connector_index_process_index($limit = NULL) {
   ", 0, $limit, array(':status' => NEO4J_CONNECTOR_INDEX_STATUS_INDEXED))->fetchAll();
 
   foreach ($records as $record) {
-    $entity = entity_load_single($record->entity_type, $record->entity_id);
+    $entity = entity_load($record->entity_type, $record->entity_id);
 
     // It's necessary to re-load the status: when indexing a content it might have a reference that is not indexed.
     // In that case we need to pre-index the referenced item (without fields) in order to be able to reference that.

@@ -15,13 +15,6 @@ class Neo4JAdminForm extends ConfigFormBase {
     parent::__construct($config_factory, $context);
   }
 
-//  public static function create(ContainerInterface $container) {
-//    return new static(
-//      $container->get('config.factory'),
-//      $container->get('config.context.free')
-//    );
-//  }
-
   public function getFormId() {
     return 'neo4j_connector_admin_settings';
   }

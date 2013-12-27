@@ -6,6 +6,7 @@
 
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\neo4j_connector\Neo4JDrupal;
+use Drupal\neo4j_connector\Neo4JDrupalIndexParam;
 
 require_once __DIR__ . '/neo4j_connector.index.inc';
 
@@ -90,12 +91,11 @@ function neo4j_connector_entity_delete(EntityInterface $entity) {
  *
  * @return \Everyman\Neo4j\Node
  */
-function neo4j_connector_add_entity_to_neo4j($entity, $type, $include_fields = TRUE) {
-  list($id, ,) = entity_extract_ids($type, $entity);
-  $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . $type, 'entity_id', $id);
+function neo4j_connector_add_entity_to_neo4j(EntityInterface $entity, $type, $include_fields = TRUE) {
+  $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . $type, 'entity_id', $entity->id());
 
   $properties = array();
-  drupal_alter('neo4j_connector_entity_properties', $properties, $entity, $type);
+  \Drupal::moduleHandler()->alter('neo4j_connector_entity_properties', $properties, $entity, $type);
 
   return Neo4JDrupal::sharedInstance()->addEntity($entity, $type, $properties, $indexParam, $include_fields);
 }
@@ -108,23 +108,21 @@ function neo4j_connector_add_entity_to_neo4j($entity, $type, $include_fields = T
  * @return array
  *  Property key value array.
  */
-function neo4j_connector_neo4j_connector_entity_properties_alter(&$properties, $entity, $entity_type) {
-  list($id, $vid, $bundle) = entity_extract_ids($entity_type, $entity);
+function neo4j_connector_neo4j_connector_entity_properties_alter(&$properties, EntityInterface $entity, $entity_type) {
   switch ($entity_type) {
     case 'node':
-      $properties['title'] = $entity->title;
+      $properties['title'] = $entity->title[0]->getValue()['value'];
       break;
 
     case 'user':
-      $properties['name'] = $entity->name;
-      $properties['mail'] = $entity->mail;
+      $properties['name'] = $entity->name[0]->getValue()['value'];
+      $properties['mail'] = $entity->mail[0]->getValue()['value'];
       break;
   }
 
-  $properties['entity_id'] = $id;
-  $properties['entity_vid'] = $vid;
+  $properties['entity_id'] = $entity->id();
   $properties['entity_type'] = $entity_type;
-  $properties['bundle'] = $bundle;
+  $properties['bundle'] = $entity->bundle();
 }
 
 /**
@@ -194,7 +192,7 @@ function _neo4j_connector_batch_op_reindex(&$context) {
  * @return \Everyman\Neo4j\Node|FALSE
  */
 function neo4j_connector_send_to_index_without_fields($entity_type, $entity_id) {
-  $entity = entity_load_single($entity_type, $entity_id);
+  $entity = entity_load($entity_type, $entity_id);
   $node = neo4j_connector_add_entity_to_neo4j($entity, $entity_type, FALSE);
 
   if ($node) {
