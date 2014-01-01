@@ -25,10 +25,7 @@ function neo4j_connector_menu() {
     'node/%node/graph' => array(
       'type' => MENU_LOCAL_TASK,
       'title' => 'Graph info',
-      'page callback' => 'neo4j_connector_node_graph_info_page',
-      'page arguments' => array(1),
-      'file' => 'neo4j_connector.pages.inc',
-      'access callback' => TRUE,
+      'route_name' => 'neo4j_connector.node_info',
     ),
     'user/%user/graph' => array(
       'type' => MENU_LOCAL_TASK,
@@ -70,6 +67,20 @@ function neo4j_connector_menu() {
   );
 }
 
+/**
+ * Implements hook_admin_paths().
+ */
+function neo4j_connector_admin_paths() {
+  return array(
+    'admin/config/neo4j/console' => TRUE,
+    'admin/config/neo4j/settings' => TRUE,
+    'admin/config/neo4j' => TRUE,
+    'node/*/graph' => TRUE,
+    'user/*/graph' => TRUE,
+    'taxonomy/term/*/graph' => TRUE,
+  );
+}
+
 function neo4j_connector_entity_insert(EntityInterface $entity) {
   neo4j_connector_index_send_to_index($entity->entityType(), $entity->id());
 }
@@ -83,6 +94,22 @@ function neo4j_connector_entity_delete(EntityInterface $entity) {
   Neo4JDrupal::sharedInstance()->deleteEntity($entity, $entity->entityType(), $indexParam);
 
   neo4j_connector_index_delete($entity->entityType(), $entity->id());
+}
+
+/**
+ * Implements hook_permission().
+ */
+function neo4j_connector_permission() {
+  return array(
+    'access neo4j graph information' => array(
+      'title' => t('Access Neo4J graph information'),
+      'description' => t('Access to the graph data regarding the Drupal content.'),
+    ),
+    'administer neo4j connector configuration' => array(
+      'title' => t('Administer Neo4J connection'),
+      'description' => t('Administer global settings for the graph database.'),
+    ),
+  );
 }
 
 /**

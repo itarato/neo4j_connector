@@ -1,0 +1,14 @@
+neo4j_connector.node_info:
+  route_name: neo4j_connector.node_info
+  tab_root_id: node.view
+  title: 'Graph info'
+
+neo4j_connector.user_info:
+  route_name: neo4j_connector.user_info
+  tab_root_id: user.view
+  title: 'Graph info'
+
+neo4j_connector.term_info:
+  route_name: neo4j_connector.term_info
+  tab_root_id: taxonomy.term_page
+  title: 'Graph info'
