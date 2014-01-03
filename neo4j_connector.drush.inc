@@ -66,6 +66,7 @@ function drush_neo4j_connector_index_statistics() {
 
 function drush_neo4j_connector_index() {
   $limit = drush_get_option('limit', NULL);
+  composer_manager_register_autoloader();
   neo4j_connector_index_process_index($limit);
 }
 

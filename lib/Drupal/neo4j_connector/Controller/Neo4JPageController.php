@@ -28,12 +28,12 @@ class Neo4JPageController extends ControllerBase {
   /**
    * Page callback of the user graph tab page.
    *
-   * @param $account
+   * @param $user
    *  User object.
    * @return string
    */
-  public function userGraphInfo(EntityInterface $account) {
-    return $this->graphInfoPageContent('user', $account->id());
+  public function userGraphInfo(EntityInterface $user) {
+    return $this->graphInfoPageContent('user', $user->id());
   }
 
   /**
@@ -43,8 +43,8 @@ class Neo4JPageController extends ControllerBase {
    *  Term object.
    * @return string
    */
-  public function termGraphInfo(EntityInterface $term) {
-    return $this->graphInfoPageContent('taxonomy_term', $term->id());
+  public function termGraphInfo(EntityInterface $taxonomy_term) {
+    return $this->graphInfoPageContent('taxonomy_term', $taxonomy_term->id());
   }
 
   /**
