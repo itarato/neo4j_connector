@@ -7,6 +7,8 @@
  */
 
 namespace Drupal\neo4j_connector;
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Language\Language;
 use Everyman\Neo4j\Node;
 
 /**
@@ -53,29 +55,23 @@ abstract class Neo4JDrupalAbstractFieldHandler {
    *
    * @param $entity
    *  Drupal entity object.
-   * @param $entity_type
-   *  Drupal entity type.
    * @param $field_name
    *  Field name.
    */
-  public function processFieldData($entity, $entity_type, $field_name) {
-    $items = field_get_items($entity_type, $entity, $field_name);
-
-    if (!$items) {
-      return;
-    }
-
+  public function processFieldData(EntityInterface $entity, $field_name) {
+    // @todo properly get languages.
+    $items = $entity->getTranslation(Language::LANGCODE_NOT_SPECIFIED)->get($field_name);
     foreach ($items as $item) {
-      $this->processFieldItem($item);
+      $this->processFieldItem($item->value);
     }
   }
 
   /**
    * Placeholder for the individual field processing.
    *
-   * @param array $item
+   * @param $value
    * @return mixed
    */
-  public abstract function processFieldItem(array $item);
+  public abstract function processFieldItem($value);
 
 }

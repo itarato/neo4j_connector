@@ -139,7 +139,7 @@ class Neo4JDrupal {
     $node = $this->addGraphNode($properties, $index_param);
 
     if ($add_fields) {
-      $this->addEntityFields($entity, $entity_type, $node);
+      $this->addEntityFields($entity, $node);
     }
 
     return $node;
@@ -214,10 +214,10 @@ class Neo4JDrupal {
    *
    * @return Node
    */
-  public function updateEntity($entity, $entity_type = 'node', array $properties, Neo4JDrupalIndexParam $index_param = NULL) {
+  public function updateEntity($entity, array $properties, Neo4JDrupalIndexParam $index_param = NULL) {
     // @todo take care of properties.
     $graph_node = $this->getGraphNodeOfIndex($index_param);
-    $this->addEntityFields($entity, $entity_type, $graph_node);
+    $this->addEntityFields($entity, $graph_node);
     return $graph_node;
   }
 
@@ -226,18 +226,16 @@ class Neo4JDrupal {
    *
    * @param $entity
    *  Drupal entity.
-   * @param $entity_type
-   *  Entity type.
    * @param $node
    *  Graph node.
    */
-  public function addEntityFields(EntityInterface $entity, $entity_type, Node $node) {
+  public function addEntityFields(EntityInterface $entity, Node $node) {
     // @todo check if it's not entity instance but entity bundle instance.
     $field_instances = Field::fieldInfo()->getBundleInstances($entity->entityType(), $entity->bundle());
     foreach ($field_instances as $field_instance) {
-      $field_info = Field::fieldInfo()->getInstance($entity->entityType(), $entity->bundle(), $field_instance->field_name);
+      $field_info = Field::fieldInfo()->getField($entity->entityType(), $field_instance->field_name);
       if ($neo4jFieldHandler = Neo4JDrupalFieldHandlerFactory::getInstance($field_info->module, $node)) {
-        $neo4jFieldHandler->processFieldData($entity, $entity_type, $field_instance->field_name);
+        $neo4jFieldHandler->processFieldData($entity, $field_instance->field_name);
       }
     }
   }

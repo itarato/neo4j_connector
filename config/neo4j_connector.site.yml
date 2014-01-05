@@ -1,2 +1,3 @@
 host: localhost
 port: 7474
+index_process_limit: 100

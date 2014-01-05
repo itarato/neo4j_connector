@@ -4,12 +4,22 @@
  * Indexing mechanism.
  */
 
-// Index statuses.
+use Drupal\neo4j_connector\Neo4JDrupal;
+use Drupal\neo4j_connector\Neo4JDrupalIndexParam;
+
+/**
+ * Index statuses.
+ */
+// Item is not found in the index.
 define('NEO4J_CONNECTOR_INDEX_STATUS_NOT_EXIST', -1);
-define('NEO4J_CONNECTOR_INDEX_STATUS_INDEX', 0);
-define('NEO4J_CONNECTOR_INDEX_STATUS_INDEXED', 1);
-define('NEO4J_CONNECTOR_INDEX_STATUS_DELETE', 2);
-define('NEO4J_CONNECTOR_INDEX_STATUS_UPDATE', 3);
+// Item is indexed properly.
+define('NEO4J_CONNECTOR_INDEX_STATUS_INDEX',      0);
+// Item is marked to be indexed. Will be indexed on the next CRON or manual call.
+define('NEO4J_CONNECTOR_INDEX_STATUS_INDEXED',    1);
+// Item is marked for deletion. Will be deleted on the next CRON or manual call.
+define('NEO4J_CONNECTOR_INDEX_STATUS_DELETE',     2);
+// Item is marked for update. Will be updated on the next CRON or manual call.
+define('NEO4J_CONNECTOR_INDEX_STATUS_UPDATE',     3);
 
 /**
  * Mark entity for indexing to Neo4J.
@@ -141,7 +151,7 @@ function _neo4j_connector_index_mark($entity_type, $entity_id, $index_status) {
  */
 function neo4j_connector_index_process_index($limit = NULL) {
   if (!$limit) {
-    $limit = variable_get('neo4j_connector_index_process_limit', 100);
+    $limit = \Drupal::config('neo4j_connector.site')->get('index_process_limit');
   }
 
   $records = db_query_range("
@@ -169,9 +179,9 @@ function neo4j_connector_index_process_index($limit = NULL) {
         $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . $record->entity_type, 'entity_id', $record->entity_id);
 
         $properties = array();
-        drupal_alter('neo4j_connector_entity_properties', $properties, $entity, $record->entity_type);
+        \Drupal::moduleHandler()->alter('neo4j_connector_entity_properties', $properties, $entity, $record->entity_type);
 
-        $graph_node = Neo4JDrupal::sharedInstance()->updateEntity($entity, $record->entity_type, $properties, $indexParam);
+        $graph_node = Neo4JDrupal::sharedInstance()->updateEntity($entity, $properties, $indexParam);
         break;
 
       case NEO4J_CONNECTOR_INDEX_STATUS_DELETE:
@@ -222,13 +232,13 @@ function neo4j_connector_index_get_stat() {
   $entity_types = Drupal::entityManager()->getDefinitions();
 
   foreach ($entity_types as $type => $info) {
-    if (!isset($info['base_table'])) {
-      // @todo Figure out what happens with table-less entities.
+    if (!isset($info['entity_keys']['id'])) {
+      // @todo Figure out what happens with ID-less entities.
       $stat['entity-' . $type] = 'unknown';
       continue;
     }
 
-    $content_num = db_query("SELECT COUNT(*) FROM {" . db_escape_table($info['base_table']) . "}")->fetchField();
+    $content_num = \Drupal::entityQuery($type)->count()->execute();
     $index_num = db_query("SELECT COUNT(*) FROM {neo4j_connector_index} WHERE entity_type = :type", array(':type' => $type))->fetchField();
     $indexed_num = db_query("
       SELECT COUNT(*)

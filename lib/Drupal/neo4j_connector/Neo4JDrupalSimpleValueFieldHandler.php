@@ -17,13 +17,6 @@ use Everyman\Neo4j\Node;
 class Neo4JDrupalSimpleValueFieldHandler extends Neo4JDrupalAbstractFieldHandler {
 
   /**
-   * Key that holds the value (nid, value, target_id, ...).
-   *
-   * @var string
-   */
-  public $fieldValueKey;
-
-  /**
    * Name of the associated index.
    *
    * @var string
@@ -41,29 +34,26 @@ class Neo4JDrupalSimpleValueFieldHandler extends Neo4JDrupalAbstractFieldHandler
    *  Name of the relationship.
    * @param $indexName
    *  Name of the index.
-   * @param $fieldValueKey
-   *  Key of the value in the field array.
    */
-  public function __construct(Node $graph_node, $type, $reference_name, $indexName, $fieldValueKey) {
+  public function __construct(Node $graph_node, $type, $reference_name, $indexName) {
     parent::__construct($graph_node, $type, $reference_name);
     $this->indexName = $indexName;
-    $this->fieldValueKey = $fieldValueKey;
   }
 
   /**
    * Implements Neo4JDrupalAbstractFieldHandler::processFieldItem().
    */
-  public function processFieldItem(array $item) {
+  public function processFieldItem($value) {
     $index = Neo4JDrupal::sharedInstance()->getIndex($this->indexName);
-    $field_node = $index->findOne('value', $item[$this->fieldValueKey]);
+    $field_node = $index->findOne('value', $value);
 
     if (!$field_node) {
       $field_node = Neo4JDrupal::sharedInstance()->client->makeNode(array(
-        'value' => $item[$this->fieldValueKey],
+        'value' => $value,
         'type' => $this->type,
       ));
       $field_node->save();
-      Neo4JDrupal::sharedInstance()->getIndex($this->indexName)->add($field_node, 'value', $item[$this->fieldValueKey]);
+      Neo4JDrupal::sharedInstance()->getIndex($this->indexName)->add($field_node, 'value', $value);
     }
 
     $this->node->relateTo($field_node, $this->referenceName)->save();

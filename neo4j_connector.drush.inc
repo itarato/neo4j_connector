@@ -50,8 +50,8 @@ function neo4j_connector_drush_command() {
 }
 
 function drush_neo4j_connector_purge_db() {
+  composer_manager_register_autoloader();
   neo4j_connector_purge_db();
-
   drush_print('Neo4J database has been purged.');
 }
 

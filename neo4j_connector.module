@@ -21,29 +21,6 @@ define('NEO4J_CONNECTOR_REINDEX_LIMIT', 100);
  */
 function neo4j_connector_menu() {
   return array(
-//    // Drupal entity tabs.
-//    'node/%node/graph' => array(
-//      'type' => MENU_LOCAL_TASK,
-//      'title' => 'Graph info',
-//      'route_name' => 'neo4j_connector.node_info',
-//    ),
-//    'user/%user/graph' => array(
-//      'type' => MENU_LOCAL_TASK,
-//      'title' => 'Graph info',
-//      'page callback' => 'neo4j_connector_user_graph_info_page',
-//      'page arguments' => array(1),
-//      'file' => 'neo4j_connector.pages.inc',
-//      'access callback' => TRUE,
-//    ),
-//    'taxonomy/term/%taxonomy_term/graph' => array(
-//      'type' => MENU_LOCAL_TASK,
-//      'title' => 'Graph info',
-//      'page callback' => 'neo4j_connector_term_graph_info_page',
-//      'page arguments' => array(2),
-//      'file' => 'neo4j_connector.pages.inc',
-//      'access callback' => TRUE,
-//    ),
-
     // Neo4J admin section.
     'admin/config/neo4j' => array(
       'title' => 'Neo4J',
@@ -81,14 +58,23 @@ function neo4j_connector_admin_paths() {
   );
 }
 
+/**
+ * Implement hook_entity_insert().
+ */
 function neo4j_connector_entity_insert(EntityInterface $entity) {
   neo4j_connector_index_send_to_index($entity->entityType(), $entity->id());
 }
 
+/**
+ * Implement hook_entity_update().
+ */
 function neo4j_connector_entity_update(EntityInterface $entity) {
   neo4j_connector_index_send_to_index($entity->entityType(), $entity->id());
 }
 
+/**
+ * Implement hook_entity_delete().
+ */
 function neo4j_connector_entity_delete(EntityInterface $entity) {
   $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . $entity->entityType(), 'entity_id', $entity->id());
   Neo4JDrupal::sharedInstance()->deleteEntity($entity, $entity->entityType(), $indexParam);
@@ -237,6 +223,9 @@ function neo4j_connector_send_to_index_without_fields($entity_type, $entity_id) 
  * Implements hook_cron().
  */
 function neo4j_connector_cron() {
+  if (!class_exists('Everyman\Neo4j\Client')) {
+    composer_manager_register_autoloader();
+  }
   neo4j_connector_index_process_index();
 }
 
