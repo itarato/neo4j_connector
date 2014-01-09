@@ -110,7 +110,7 @@ function neo4j_connector_add_entity_to_neo4j(EntityInterface $entity, $type, $in
   $properties = array();
   \Drupal::moduleHandler()->alter('neo4j_connector_entity_properties', $properties, $entity, $type);
 
-  return Neo4JDrupal::sharedInstance()->addEntity($entity, $type, $properties, $indexParam, $include_fields);
+  return Neo4JDrupal::sharedInstance()->addEntity($entity, $properties, $indexParam, $include_fields);
 }
 
 /**

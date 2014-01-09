@@ -62,7 +62,9 @@ abstract class Neo4JDrupalAbstractFieldHandler {
     // @todo properly get languages.
     $items = $entity->getTranslation(Language::LANGCODE_NOT_SPECIFIED)->get($field_name);
     foreach ($items as $item) {
-      $this->processFieldItem($item->value);
+      if (($value = $item->value)) {
+        $this->processFieldItem($item->value);
+      }
     }
   }
 

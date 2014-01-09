@@ -123,8 +123,6 @@ class Neo4JDrupal {
    *
    * @param $entity
    *  Entity object.
-   * @param string $entity_type
-   *  Entity type string.
    * @param array $properties
    *  Properties array to store on the graph node.
    * @param Neo4JDrupalIndexParam $index_param
@@ -135,7 +133,7 @@ class Neo4JDrupal {
    * @return Node
    *  Created graph node object.
    */
-  public function addEntity($entity, $entity_type = 'node', array $properties, Neo4JDrupalIndexParam $index_param = NULL, $add_fields = TRUE) {
+  public function addEntity($entity, array $properties, Neo4JDrupalIndexParam $index_param = NULL, $add_fields = TRUE) {
     $node = $this->addGraphNode($properties, $index_param);
 
     if ($add_fields) {

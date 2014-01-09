@@ -4,9 +4,13 @@
  * Tests.
  */
 
+namespace Drupal\neo4j_connector\Test;
+
+use Drupal\simpletest\WebTestBase;
+
 require_once __DIR__ . '/neo4j_connector.test_tool.inc';
 
-class Neo4JDrupalConnectorTestCase extends DrupalWebTestCase {
+class Neo4JDrupalConnectorTest extends WebTestBase {
 
   protected $neo4j_drupal_connector;
 
