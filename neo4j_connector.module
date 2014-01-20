@@ -251,12 +251,12 @@ function neo4j_connector_send_content_to_index() {
 
   $operations = array();
   foreach ($entity_types as $type => $info) {
-    if (!isset($info['entity_keys']['id'])) {
+    if (!$info->getKey('id')) {
       // If there is no id entity key than it's probably not for querying. (via entity query)
       // @todo keep an eye on it - maybe there will be a D8 solution sometime.
       continue;
     }
-    $operations[] = array('_neo4j_connector_batch_op_mark_for_index', array($type, $info['entity_keys']['id']));
+    $operations[] = array('_neo4j_connector_batch_op_mark_for_index', array($type, $info->getKey('id')));
   }
 
   $batch = array(

@@ -232,7 +232,7 @@ function neo4j_connector_index_get_stat() {
   $entity_types = Drupal::entityManager()->getDefinitions();
 
   foreach ($entity_types as $type => $info) {
-    if (!isset($info['entity_keys']['id'])) {
+    if (!$info->getKey('id')) {
       // @todo Figure out what happens with ID-less entities.
       $stat['entity-' . $type] = 'unknown';
       continue;

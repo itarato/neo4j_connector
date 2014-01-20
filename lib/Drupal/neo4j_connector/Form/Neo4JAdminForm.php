@@ -11,8 +11,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class Neo4JAdminForm extends ConfigFormBase {
 
-  public function __construct(ConfigFactory $config_factory, ContextInterface $context) {
-    parent::__construct($config_factory, $context);
+  public function __construct(ConfigFactory $config_factory) {
+    parent::__construct($config_factory);
   }
 
   public function getFormId() {

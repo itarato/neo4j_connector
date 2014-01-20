@@ -203,8 +203,6 @@ class Neo4JDrupal {
    *
    * @param $entity
    *  Drupal entity.
-   * @param string $entity_type
-   *  Entity type.
    * @param array $properties
    *  Properties to store.
    * @param Neo4JDrupalIndexParam $index_param
@@ -213,8 +211,15 @@ class Neo4JDrupal {
    * @return Node
    */
   public function updateEntity($entity, array $properties, Neo4JDrupalIndexParam $index_param = NULL) {
-    // @todo take care of properties.
     $graph_node = $this->getGraphNodeOfIndex($index_param);
+    $graph_node->setProperties($properties);
+    $graph_node->save();
+
+    $relationships = $graph_node->getRelationships();
+    foreach ($relationships as $relationship) {
+      $relationship->delete();
+    }
+
     $this->addEntityFields($entity, $graph_node);
     return $graph_node;
   }
