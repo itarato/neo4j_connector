@@ -44,6 +44,11 @@ class Neo4JDrupal {
   public $queryClass;
 
   /**
+   * Property name on the relationship that contains the owner graph node's ID.
+   */
+  const OWNER = 'owner-id';
+
+  /**
    * Constructor.
    * Use Neo4JDrupal::sharedInstance() instead.
    */
@@ -150,17 +155,17 @@ class Neo4JDrupal {
    * @return Node
    */
   public function addGraphNode(array $properties, Neo4JDrupalIndexParam $indexParam = NULL) {
-    $node = $this->client->makeNode();
-    $node->setProperties($properties);
-    $node->save();
+    $gnode = $this->client->makeNode();
+    $gnode->setProperties($properties);
+    $gnode->save();
 
     if ($indexParam) {
-      $this->getIndex($indexParam->name)->add($node, $indexParam->key, $indexParam->value);
+      $this->getIndex($indexParam->name)->add($gnode, $indexParam->key, $indexParam->value);
     }
 
-    watchdog(__FUNCTION__, 'Graph node has been created: @id', array('@id' => $node->getId()));
+    watchdog(__FUNCTION__, 'Graph node has been created: @id', array('@id' => $gnode->getId()));
 
-    return $node;
+    return $gnode;
   }
 
   /**
@@ -210,9 +215,21 @@ class Neo4JDrupal {
    * @return Node
    */
   public function updateEntity($entity, $entity_type = 'node', array $properties, Neo4JDrupalIndexParam $index_param = NULL) {
-    $graph_node = $this->getGraphNodeOfIndex($index_param);
-    $this->addEntityFields($entity, $entity_type, $graph_node);
-    return $graph_node;
+    $gnode = $this->getGraphNodeOfIndex($index_param);
+    $gnode->setProperties($properties);
+    $gnode->save();
+
+    $relationships = $gnode->getRelationships();
+    foreach ($relationships as $relationship) {
+      if ($gnode->getId() != $relationship->getProperty(Neo4JDrupal::OWNER)) {
+        // The relationship does not belong to the graph node. Keep it.
+        continue;
+      }
+      $relationship->delete();
+    }
+
+    $this->addEntityFields($entity, $entity_type, $gnode);
+    return $gnode;
   }
 
   /**

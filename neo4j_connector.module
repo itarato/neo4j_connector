@@ -74,16 +74,25 @@ function neo4j_connector_menu() {
   );
 }
 
+/**
+ * Implements hook_entity_insert().
+ */
 function neo4j_connector_entity_insert($entity, $type) {
   list ($id,,) = entity_extract_ids($type, $entity);
   neo4j_connector_index_send_to_index($type, $id);
 }
 
+/**
+ * Implements hook_entity_update().
+ */
 function neo4j_connector_entity_update($entity, $type) {
   list ($id,,) = entity_extract_ids($type, $entity);
   neo4j_connector_index_send_to_index($type, $id);
 }
 
+/**
+ * Implements hook_entity_delete().
+ */
 function neo4j_connector_entity_delete($entity, $type) {
   list ($id,,) = entity_extract_ids($type, $entity);
 
@@ -96,6 +105,7 @@ function neo4j_connector_entity_delete($entity, $type) {
 /**
  * @param $entity
  * @param $type
+ * @param $include_fields
  *
  * @return \Everyman\Neo4j\Node
  */
@@ -112,10 +122,10 @@ function neo4j_connector_add_entity_to_neo4j($entity, $type, $include_fields = T
 /**
  * Helper function to collect graph node properties of a node to store.
  *
+ * @param $properties
  * @param $entity
  *  Node object.
- * @return array
- *  Property key value array.
+ * @param $entity_type
  */
 function neo4j_connector_neo4j_connector_entity_properties_alter(&$properties, $entity, $entity_type) {
   list($id, $vid, $bundle) = entity_extract_ids($entity_type, $entity);

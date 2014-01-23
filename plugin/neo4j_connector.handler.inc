@@ -45,6 +45,9 @@ class Neo4JDrupalFieldHandlerFactory {
       case 'taxonomy':
         $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . 'taxonomy_term', 'entity_id');
         return new Neo4JDrupalReferenceFieldHandler($graph_node, $module_name, 'TAXONOMY_TERM_REFERENCE', $indexParam, 'tid', 'taxonomy_term');
+
+      case 'relation_endpoint':
+        return new Neo4JDrupalRelationEndpointFieldHandler($graph_node, $module_name, 'RELATION');
     }
 
     return NULL;
@@ -108,18 +111,33 @@ abstract class Neo4JDrupalAbstractFieldHandler {
       return;
     }
 
+    // Either process the fields individually.
     foreach ($items as $item) {
-      $this->processFieldItem($item);
+      $this->processFieldItem($item, $entity);
     }
+    // Or all in one.
+    $this->processAllFieldItems($items, $entity);
   }
 
   /**
    * Placeholder for the individual field processing.
    *
    * @param array $item
-   * @return mixed
+   *  Array of field item values.
+   * @param stdClass $entity
+   *  Entity object.
    */
-  public abstract function processFieldItem(array $item);
+  public function processFieldItem(array $item, stdClass $entity) { }
+
+  /**
+   * Placeholder for the fields (all in one array) processing.
+   *
+   * @param array $items
+   *  Array of field items.
+   * @param stdClass $entity
+   *  Entity object.
+   */
+  public function processAllFieldItems(array $items, stdClass $entity) { }
 
 }
 
@@ -166,7 +184,7 @@ class Neo4JDrupalSimpleValueFieldHandler extends Neo4JDrupalAbstractFieldHandler
   /**
    * Implements Neo4JDrupalAbstractFieldHandler::processFieldItem().
    */
-  public function processFieldItem(array $item) {
+  public function processFieldItem(array $item, stdClass $entity) {
     $index = Neo4JDrupal::sharedInstance()->getIndex($this->indexName);
     $field_node = $index->findOne('value', $item[$this->fieldValueKey]);
 
@@ -179,7 +197,9 @@ class Neo4JDrupalSimpleValueFieldHandler extends Neo4JDrupalAbstractFieldHandler
       Neo4JDrupal::sharedInstance()->getIndex($this->indexName)->add($field_node, 'value', $item[$this->fieldValueKey]);
     }
 
-    $this->node->relateTo($field_node, $this->referenceName)->save();
+    $this->node->relateTo($field_node, $this->referenceName)
+      ->setProperty(Neo4JDrupal::OWNER, $this->node->getId())
+      ->save();
   }
 
 }
@@ -232,7 +252,7 @@ class Neo4JDrupalReferenceFieldHandler extends Neo4JDrupalAbstractFieldHandler {
   /**
    * Implements Neo4JDrupalAbstractFieldHandler::processFieldItem().
    */
-  public function processFieldItem(array $item) {
+  public function processFieldItem(array $item, stdClass $entity) {
     $this->indexParam->value = $item[$this->fieldValueKey];
 
     $referencedNode = Neo4JDrupal::sharedInstance()->getGraphNodeOfIndex($this->indexParam);
@@ -242,7 +262,9 @@ class Neo4JDrupalReferenceFieldHandler extends Neo4JDrupalAbstractFieldHandler {
     }
 
     if ($referencedNode) {
-      $this->node->relateTo($referencedNode, $this->referenceName)->save();
+      $this->node->relateTo($referencedNode, $this->referenceName)
+        ->setProperty(Neo4JDrupal::OWNER, $this->node->getId())
+        ->save();
     }
     else {
       watchdog(__CLASS__, 'Unable to connect to reference. Type: @type, id: @id.', array(
@@ -250,6 +272,45 @@ class Neo4JDrupalReferenceFieldHandler extends Neo4JDrupalAbstractFieldHandler {
         '@id' => $this->indexParam->value,
       ), WATCHDOG_ERROR);
     }
+  }
+
+}
+
+/**
+ * Class Neo4JDrupalRelationEndpointFieldHandler
+ * Handles Relation module's endpoint field.
+ */
+class Neo4JDrupalRelationEndpointFieldHandler extends Neo4JDrupalAbstractFieldHandler {
+
+  /**
+   * Implements Neo4JDrupalAbstractFieldHandler::processAllFieldItems().
+   */
+  public function processAllFieldItems(array $items, stdClass $entity) {
+    $gnodes = array();
+    foreach ($items as $idx => $item) {
+      $gnode_index = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . $item['entity_type'], 'entity_id', $item['entity_id']);
+      $gnode = Neo4JDrupal::sharedInstance()->getGraphNodeOfIndex($gnode_index);
+      if (!$gnode) {
+        $gnode = neo4j_connector_send_to_index_without_fields($item['entity_type'], $item['entity_id']);
+        if (!$gnode) {
+          watchdog(__METHOD__, 'Unable to create placeholder graph node of: @entity_type - @id', array('@entity_type' => $item['entity_type'], 'id' => $item['entity_id']), WATCHDOG_ERROR);
+          return;
+        }
+      }
+      $gnodes[$idx] = $gnode;
+    }
+
+    // Saving the main relation.
+    $gnodes[0]->relateTo($gnodes[1], $entity->relation_type)
+      ->setProperty(Neo4JDrupal::OWNER, $this->node->getId())
+      ->save();
+    // Save relationship from the relation entity to the subject entities.
+    $this->node->relateTo($gnodes[0], 'RELATION_FROM')
+      ->setProperty(Neo4JDrupal::OWNER, $this->node->getId())
+      ->save();
+    $this->node->relateTo($gnodes[1], 'RELATION_TO')
+      ->setProperty(Neo4JDrupal::OWNER, $this->node->getId())
+      ->save();
   }
 
 }
