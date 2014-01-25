@@ -211,17 +211,17 @@ class Neo4JDrupal {
    * @return Node
    */
   public function updateEntity($entity, array $properties, Neo4JDrupalIndexParam $index_param = NULL) {
-    $graph_node = $this->getGraphNodeOfIndex($index_param);
-    $graph_node->setProperties($properties);
-    $graph_node->save();
+    $gnode = $this->getGraphNodeOfIndex($index_param);
+    $gnode->setProperties($properties);
+    $gnode->save();
 
-    $relationships = $graph_node->getRelationships();
+    $relationships = $gnode->getRelationships();
     foreach ($relationships as $relationship) {
       $relationship->delete();
     }
 
-    $this->addEntityFields($entity, $graph_node);
-    return $graph_node;
+    $this->addEntityFields($entity, $gnode);
+    return $gnode;
   }
 
   /**
@@ -233,7 +233,6 @@ class Neo4JDrupal {
    *  Graph node.
    */
   public function addEntityFields(EntityInterface $entity, Node $node) {
-    // @todo check if it's not entity instance but entity bundle instance.
     $field_instances = Field::fieldInfo()->getBundleInstances($entity->entityType(), $entity->bundle());
     foreach ($field_instances as $field_instance) {
       $field_info = Field::fieldInfo()->getField($entity->entityType(), $field_instance->field_name);
@@ -259,13 +258,16 @@ class Neo4JDrupal {
   }
 
   /**
+   * Fetch the graph node identified by the index.
+   *
    * @param Neo4JDrupalIndexParam $index_param
+   *  Index parameter.
    * @return bool|Node
    */
   public function getGraphNodeOfIndex(Neo4JDrupalIndexParam $index_param) {
-    $propCont = $this->getIndex($index_param->name)->findOne($index_param->key, $index_param->value);
-    if ($propCont) {
-      return $this->client->getNode($propCont->getId());
+    $prop_cont = $this->getIndex($index_param->name)->findOne($index_param->key, $index_param->value);
+    if ($prop_cont) {
+      return $this->client->getNode($prop_cont->getId());
     }
     return FALSE;
   }

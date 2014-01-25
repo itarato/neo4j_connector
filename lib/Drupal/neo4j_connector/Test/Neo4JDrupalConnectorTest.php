@@ -29,6 +29,7 @@ class Neo4JDrupalConnectorTest extends WebTestBase {
       'MockNeo4JDrupalNodeIndex',
       'MockNeo4JDrupalQuery'
     );
+    \MockRunner::
   }
 
   public function testGraphNodeCreatedAndIndexed() {
