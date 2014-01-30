@@ -1,14 +1,13 @@
 <?php
 /**
- * Created by PhpStorm.
- * User: itarato
- * Date: 12/26/13
- * Time: 12:42 PM
+ * @file
  */
 
 namespace Drupal\neo4j_connector\Form;
 
 use Drupal\Core\Form\FormBase;
+use Drupal\neo4j_connector\Neo4JDrupal;
+use \Everyman\Neo4j\Exception as Neo4J_Exception;
 
 class Neo4JConsoleForm extends FormBase {
 
@@ -30,9 +29,7 @@ class Neo4JConsoleForm extends FormBase {
     return $form;
   }
 
-  public function validateForm(array &$form, array &$form_state) {
-
-  }
+  public function validateForm(array &$form, array &$form_state) { }
 
   public function submitForm(array &$form, array &$form_state) {
     try {
@@ -43,11 +40,18 @@ class Neo4JConsoleForm extends FormBase {
           $rows[] = $row->getId();
         }
       }
-      dpm($rows);
+      if (\Drupal::moduleHandler()->moduleExists('devel')) {
+        dpm($rows);
+      }
     }
-    catch (\Everyman\Neo4j\Exception $e) {
-      dpm($e);
+    catch (Neo4J_Exception $e) {
+      if (\Drupal::moduleHandler()->moduleExists('devel')) {
+        dpm($e);
+      }
+      else {
+        drupal_set_message(t('Unable to execute the query.'));
+      }
     }
   }
 
-} 
+}

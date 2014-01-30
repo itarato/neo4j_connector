@@ -30,7 +30,7 @@ function neo4j_connector_schema() {
           'unsigned' => TRUE,
           'not null' => TRUE,
           'default' => 0,
-          'description' => 'Index status (unindexed, marked, indexed, deleted, etc).',
+          'description' => 'Index status (un-indexed, marked, indexed, deleted, etc).',
         ),
         'changed' => array(
           'type' => 'int',

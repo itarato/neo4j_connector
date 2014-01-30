@@ -4,15 +4,23 @@
  * Tests.
  */
 
-namespace Drupal\neo4j_connector\Test;
+namespace Drupal\neo4j_connector\Tests;
 
 use Drupal\simpletest\WebTestBase;
+use Drupal\neo4j_connector\Neo4JDrupal;
 
 require_once __DIR__ . '/neo4j_connector.test_tool.inc';
 
 class Neo4JDrupalConnectorTest extends WebTestBase {
 
   protected $neo4j_drupal_connector;
+
+  /**
+   * Modules to enable.
+   *
+   * @var array
+   */
+  public static $modules = array('neo4j_connector');
 
   public static function getInfo() {
     return array(
@@ -23,13 +31,15 @@ class Neo4JDrupalConnectorTest extends WebTestBase {
   }
 
   public function setUp() {
-    parent::setUp('neo4j_connector');
+    parent::setUp();
+
+    $mock_Neo4JDrupalClient = \PHPUnit_Framework_MockObject_Generator::getMock('Everyman\Neo4j\Client');
+
     $this->neo4j_drupal_connector = Neo4JDrupal::createSharedInstance(
-      new MockNeo4JDrupalClient(),
+      $mock_Neo4JDrupalClient,
       'MockNeo4JDrupalNodeIndex',
       'MockNeo4JDrupalQuery'
     );
-    \MockRunner::
   }
 
   public function testGraphNodeCreatedAndIndexed() {

@@ -36,25 +36,25 @@ class Neo4JDrupal {
   /**
    * Class of graph node index. Should be NodeIndex or subtype of it.
    *
-   * @var string
+   * @var Neo4JDrupalIndexFactory
    */
-  public $nodeIndexClass;
+  public $nodeIndexFactory;
 
   /**
    * Class of the query. Should be Query or subtype of it.
    *
-   * @var string
+   * @var Neo4JDrupalQueryFactory
    */
-  public $queryClass;
+  public $queryFactory;
 
   /**
    * Constructor.
    * Use Neo4JDrupal::sharedInstance() instead.
    */
-  public function __construct(Client $client, $node_index_class, $query_class) {
+  public function __construct(Client $client, $node_index_factory, $query_factory) {
     $this->client = $client;
-    $this->nodeIndexClass = $node_index_class;
-    $this->queryClass = $query_class;
+    $this->nodeIndexFactory = $node_index_factory;
+    $this->queryFactory = $query_factory;
   }
 
   /**
@@ -79,8 +79,8 @@ class Neo4JDrupal {
   public static function sharedInstance() {
     if (!self::$sharedInstance) {
       $config = \Drupal::config('neo4j_connector.site');
-      $client = new Client($config->get('neo4j_connector_host'), $config->get('neo4j_connector_port'));
-      self::$sharedInstance = new Neo4JDrupal($client, 'Everyman\Neo4j\Index\NodeIndex', 'Everyman\Neo4j\Cypher\Query');
+      $client = new Client($config->get('host'), $config->get('port'));
+      self::$sharedInstance = new Neo4JDrupal($client, 'Drupal\neo4j_connector\Neo4JDrupalIndexFactory', 'Drupal\neo4j_connector\Neo4JDrupalQueryFactory');
     }
 
     return self::$sharedInstance;
@@ -96,7 +96,8 @@ class Neo4JDrupal {
     static $indexes = array();
 
     if (!isset($indexes[$index_name])) {
-      $indexes[$index_name] = new $this->nodeIndexClass($this->client, $index_name);
+      $node_index_factory = $this->nodeIndexFactory;
+      $indexes[$index_name] = $node_index_factory::create($this->client, $index_name);
       $indexes[$index_name]->save();
     }
 
@@ -113,7 +114,8 @@ class Neo4JDrupal {
    * @return \Everyman\Neo4j\Query\ResultSet
    */
   public function query($template, $vars = array()) {
-    $query = new $this->queryClass($this->client, $template, $vars);
+    $query_factory = $this->queryFactory;
+    $query = $query_factory::create($this->client, $template, $vars);
     return $query->getResultSet();
   }
 

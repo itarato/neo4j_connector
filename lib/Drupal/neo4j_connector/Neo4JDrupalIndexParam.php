@@ -1,9 +1,6 @@
 <?php
 /**
- * Created by PhpStorm.
- * User: itarato
- * Date: 12/26/13
- * Time: 11:36 PM
+ * @file
  */
 
 namespace Drupal\neo4j_connector;
