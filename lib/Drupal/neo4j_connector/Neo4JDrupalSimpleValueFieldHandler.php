@@ -1,13 +1,12 @@
 <?php
 /**
- * Created by PhpStorm.
- * User: itarato
- * Date: 12/27/13
- * Time: 12:48 AM
+ * @file
  */
 
 namespace Drupal\neo4j_connector;
 
+use Drupal\field\Entity\Field;
+use Everyman\Neo4j\Label;
 use Everyman\Neo4j\Node;
 
 /**
@@ -28,15 +27,13 @@ class Neo4JDrupalSimpleValueFieldHandler extends Neo4JDrupalAbstractFieldHandler
    *
    * @param Node $graph_node
    *  Graph node to attach to.
-   * @param $type
-   *  Type of graph node.
-   * @param $reference_name
-   *  Name of the relationship.
+   * @param $field_info
+   *  Field info.
    * @param $indexName
    *  Name of the index.
    */
-  public function __construct(Node $graph_node, $type, $reference_name, $indexName) {
-    parent::__construct($graph_node, $type, $reference_name);
+  public function __construct(Node $graph_node, Field $field_info, $indexName) {
+    parent::__construct($graph_node, $field_info);
     $this->indexName = $indexName;
   }
 
@@ -50,13 +47,20 @@ class Neo4JDrupalSimpleValueFieldHandler extends Neo4JDrupalAbstractFieldHandler
     if (!$field_node) {
       $field_node = Neo4JDrupal::sharedInstance()->client->makeNode(array(
         'value' => $value,
-        'type' => $this->type,
+        'type' => $this->fieldInfo->module,
       ));
       $field_node->save();
+
+      $labels = array();
+      foreach (array('field', 'field:' . $this->fieldInfo->name) as $label_string) {
+        $labels[] = new Label(Neo4JDrupal::sharedInstance()->client, $label_string);
+      }
+      $field_node->addLabels($labels);
+
       Neo4JDrupal::sharedInstance()->getIndex($this->indexName)->add($field_node, 'value', $value);
     }
 
-    $this->node->relateTo($field_node, $this->referenceName)->save();
+    $this->node->relateTo($field_node, $this->fieldInfo->name)->save();
   }
 
 }

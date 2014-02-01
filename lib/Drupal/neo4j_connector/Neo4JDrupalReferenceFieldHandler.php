@@ -6,6 +6,7 @@
 
 namespace Drupal\neo4j_connector;
 
+use Drupal\field\Entity\Field;
 use Everyman\Neo4j\Node;
 
 /**
@@ -28,17 +29,15 @@ class Neo4JDrupalReferenceFieldHandler extends Neo4JDrupalAbstractFieldHandler {
    *
    * @param Node $graph_node
    *  Graph node.
-   * @param $type
-   *  Type.
-   * @param $reference_name
-   *  Name of relationship.
+   * @param $field_info
+   *  Field info.
    * @param Neo4JDrupalIndexParam $index_param
    *  Index.
    * @param $ref_entity_type
    *  Referenced entity_type.
    */
-  public function __construct(Node $graph_node, $type, $reference_name, Neo4JDrupalIndexParam $index_param, $ref_entity_type) {
-    parent::__construct($graph_node, $type, $reference_name);
+  public function __construct(Node $graph_node, Field $field_info, Neo4JDrupalIndexParam $index_param, $ref_entity_type) {
+    parent::__construct($graph_node, $field_info);
     $this->indexParam = $index_param;
     $this->refEntityType = $ref_entity_type;
   }
@@ -56,7 +55,7 @@ class Neo4JDrupalReferenceFieldHandler extends Neo4JDrupalAbstractFieldHandler {
     }
 
     if ($referencedNode) {
-      $this->node->relateTo($referencedNode, $this->referenceName)->save();
+      $this->node->relateTo($referencedNode, $this->fieldInfo->name)->save();
     }
     else {
       watchdog(__CLASS__, 'Unable to connect to reference. Type: @type, id: @id.', array(

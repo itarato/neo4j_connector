@@ -9,6 +9,7 @@
 namespace Drupal\neo4j_connector;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Language\Language;
+use Drupal\field\Entity\Field;
 use Everyman\Neo4j\Node;
 
 /**
@@ -24,18 +25,11 @@ abstract class Neo4JDrupalAbstractFieldHandler {
   protected $node;
 
   /**
-   * Type.
+   * Field info.
    *
-   * @var string
+   * @var stdClass
    */
-  protected $type;
-
-  /**
-   * Name of the relationship.
-   *
-   * @var string
-   */
-  public $referenceName;
+  protected $fieldInfo;
 
   /**
    * Constructor.
@@ -44,10 +38,9 @@ abstract class Neo4JDrupalAbstractFieldHandler {
    * @param $type
    * @param $reference_name
    */
-  public function __construct(Node $graph_node, $type, $reference_name) {
+  public function __construct(Node $graph_node, Field $field_info) {
     $this->node = $graph_node;
-    $this->type = $type;
-    $this->referenceName = $reference_name;
+    $this->fieldInfo = $field_info;
   }
 
   /**

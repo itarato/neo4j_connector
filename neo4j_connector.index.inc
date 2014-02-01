@@ -172,7 +172,7 @@ function neo4j_connector_index_process_index($limit = NULL) {
 
     switch ($status) {
       case NEO4J_CONNECTOR_INDEX_STATUS_INDEX:
-        $graph_node = neo4j_connector_add_entity_to_neo4j($entity, $record->entity_type);
+        $graph_node = neo4j_connector_add_entity_to_neo4j($entity);
         break;
 
       case NEO4J_CONNECTOR_INDEX_STATUS_UPDATE:

@@ -10,6 +10,7 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\field\Field;
 use Everyman\Neo4j\Client;
 use Everyman\Neo4j\Index\NodeIndex;
+use Everyman\Neo4j\Label;
 use Everyman\Neo4j\Node;
 use Everyman\Neo4j\Cypher\Query;
 
@@ -129,14 +130,21 @@ class Neo4JDrupal {
    *  Properties array to store on the graph node.
    * @param Neo4JDrupalIndexParam $index_param
    *  Index to locate the new node.
+   * @param $labels
+   *  Array of label strings.
    * @param $add_fields
    *  Boolean flag - if processing fields is necessary. Default is TRUE.
    *
    * @return Node
    *  Created graph node object.
    */
-  public function addEntity($entity, array $properties, Neo4JDrupalIndexParam $index_param = NULL, $add_fields = TRUE) {
+  public function addEntity($entity, array $properties, Neo4JDrupalIndexParam $index_param = NULL, array $labels = array(), $add_fields = TRUE) {
     $node = $this->addGraphNode($properties, $index_param);
+    $label_objects = array();
+    foreach ($labels as $label_string) {
+      $label_objects[] = new Label($this->client, $label_string);
+    }
+    $node->addLabels($label_objects);
 
     if ($add_fields) {
       $this->addEntityFields($entity, $node);
@@ -238,7 +246,7 @@ class Neo4JDrupal {
     $field_instances = Field::fieldInfo()->getBundleInstances($entity->entityType(), $entity->bundle());
     foreach ($field_instances as $field_instance) {
       $field_info = Field::fieldInfo()->getField($entity->entityType(), $field_instance->field_name);
-      if ($neo4jFieldHandler = Neo4JDrupalFieldHandlerFactory::getInstance($field_info->module, $node)) {
+      if ($neo4jFieldHandler = Neo4JDrupalFieldHandlerFactory::getInstance($field_info, $node)) {
         $neo4jFieldHandler->processFieldData($entity, $field_instance->field_name);
       }
     }

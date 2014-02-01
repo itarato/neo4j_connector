@@ -134,30 +134,34 @@ function neo4j_connector_permission() {
 }
 
 /**
- * @param $entity
- * @param $type
- *
+ * @param EntityInterface $entity
+ * @param bool $include_fields
  * @return \Everyman\Neo4j\Node
  */
-function neo4j_connector_add_entity_to_neo4j(EntityInterface $entity, $type, $include_fields = TRUE) {
-  $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . $type, 'entity_id', $entity->id());
+function neo4j_connector_add_entity_to_neo4j(EntityInterface $entity, $include_fields = TRUE) {
+  $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . $entity->entityType(), 'entity_id', $entity->id());
 
   $properties = array();
-  \Drupal::moduleHandler()->alter('neo4j_connector_entity_properties', $properties, $entity, $type);
+  \Drupal::moduleHandler()->alter('neo4j_connector_entity_properties', $properties, $entity);
 
-  return Neo4JDrupal::sharedInstance()->addEntity($entity, $properties, $indexParam, $include_fields);
+  $labels = array();
+  \Drupal::moduleHandler()->alter('neo4j_connector_entity_labels', $labels, $entity);
+
+  return Neo4JDrupal::sharedInstance()->addEntity($entity, $properties, $indexParam, $labels, $include_fields);
 }
 
 /**
  * Helper function to collect graph node properties of a node to store.
  *
+ * @param $properties
+ *  Property array.
  * @param $entity
  *  Node object.
  * @return array
  *  Property key value array.
  */
-function neo4j_connector_neo4j_connector_entity_properties_alter(&$properties, EntityInterface $entity, $entity_type) {
-  switch ($entity_type) {
+function neo4j_connector_neo4j_connector_entity_properties_alter(array &$properties, EntityInterface $entity) {
+  switch ($entity->entityType()) {
     case 'node':
       $properties['title'] = $entity->title[0]->getValue()['value'];
       break;
@@ -169,8 +173,17 @@ function neo4j_connector_neo4j_connector_entity_properties_alter(&$properties, E
   }
 
   $properties['entity_id'] = $entity->id();
-  $properties['entity_type'] = $entity_type;
+  $properties['entity_type'] = $entity->entityType();
   $properties['bundle'] = $entity->bundle();
+}
+
+/**
+ * @param array $labels
+ * @param EntityInterface $entity
+ */
+function neo4j_connector_neo4j_connector_entity_labels_alter(array &$labels, EntityInterface $entity) {
+  $labels[] = 'entity';
+  $labels[] = 'entity:' . $entity->entityType();
 }
 
 /**
@@ -241,7 +254,7 @@ function _neo4j_connector_batch_op_reindex(&$context) {
  */
 function neo4j_connector_send_to_index_without_fields($entity_type, $entity_id) {
   $entity = entity_load($entity_type, $entity_id);
-  $node = neo4j_connector_add_entity_to_neo4j($entity, $entity_type, FALSE);
+  $node = neo4j_connector_add_entity_to_neo4j($entity, FALSE);
 
   if ($node) {
     _neo4j_connector_index_mark($entity_type, $entity_id, NEO4J_CONNECTOR_INDEX_STATUS_UPDATE);
