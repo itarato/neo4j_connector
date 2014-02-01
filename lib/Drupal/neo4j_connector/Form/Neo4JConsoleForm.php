@@ -34,12 +34,7 @@ class Neo4JConsoleForm extends FormBase {
   public function submitForm(array &$form, array &$form_state) {
     try {
       $result_set = Neo4JDrupal::sharedInstance()->query($form_state['values']['query']);
-      $rows = array();
-      foreach ($result_set as $result) {
-        foreach ($result as $row) {
-          $rows[] = $row->getId();
-        }
-      }
+      $rows = $this->extractQueryResult($result_set);
       if (\Drupal::moduleHandler()->moduleExists('devel')) {
         dpm($rows);
       }
@@ -52,6 +47,33 @@ class Neo4JConsoleForm extends FormBase {
         drupal_set_message(t('Unable to execute the query.'));
       }
     }
+  }
+
+  private function extractQueryResult(\Everyman\Neo4j\Query\ResultSet $result_set) {
+    $rows = array();
+    for (;$result_set->valid() && ($current = $result_set->current()); $result_set->next()) {
+      $rows[] = $this->extractQueryRow($current);
+    }
+    return $rows;
+  }
+
+  private function extractQueryRow(\Everyman\Neo4j\Query\Row $row) {
+    $rows = array();
+    foreach ($row as $record) {
+      if ($record instanceof \Everyman\Neo4j\Node) {
+        $rows[] = $record->getProperties();
+      }
+      elseif ($record instanceof \Everyman\Neo4j\Relationship) {
+        $rows[] = $record->getType();
+      }
+      elseif ($record instanceof \Everyman\Neo4j\Query\Row) {
+        $rows[] = $this->extractQueryRow($record);
+      }
+      else {
+        $rows[] = $record;
+      }
+    }
+    return $rows;
   }
 
 }
