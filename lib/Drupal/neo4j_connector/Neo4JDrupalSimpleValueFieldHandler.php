@@ -41,11 +41,12 @@ class Neo4JDrupalSimpleValueFieldHandler extends Neo4JDrupalAbstractFieldHandler
    * Implements Neo4JDrupalAbstractFieldHandler::processFieldItem().
    */
   public function processFieldItem($value) {
-    $index = Neo4JDrupal::sharedInstance()->getIndex($this->indexName);
+    $client = neo4j_connector_get_client();
+    $index = $client->getIndex($this->indexName);
     $field_node = $index->findOne('value', $value);
 
     if (!$field_node) {
-      $field_node = Neo4JDrupal::sharedInstance()->client->makeNode(array(
+      $field_node = $client->client->makeNode(array(
         'value' => $value,
         'type' => $this->fieldInfo->module,
       ));
@@ -53,11 +54,11 @@ class Neo4JDrupalSimpleValueFieldHandler extends Neo4JDrupalAbstractFieldHandler
 
       $labels = array();
       foreach (array('field', 'field:' . $this->fieldInfo->name) as $label_string) {
-        $labels[] = new Label(Neo4JDrupal::sharedInstance()->client, $label_string);
+        $labels[] = new Label($client->client, $label_string);
       }
       $field_node->addLabels($labels);
 
-      Neo4JDrupal::sharedInstance()->getIndex($this->indexName)->add($field_node, 'value', $value);
+      $client->getIndex($this->indexName)->add($field_node, 'value', $value);
     }
 
     $this->node->relateTo($field_node, $this->fieldInfo->name)->save();

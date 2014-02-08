@@ -26,7 +26,6 @@ function neo4j_connector_menu() {
       'title' => 'Neo4J',
       'description' => 'Administration tools.',
       'route_name' => 'neo4j_connector.admin',
-//      'menu_name' => 'admin',
     ),
 
     // Regenerate nodes / users.
@@ -91,6 +90,13 @@ function neo4j_connector_admin_paths() {
     'user/*/graph' => TRUE,
     'taxonomy/term/*/graph' => TRUE,
   );
+}
+
+/**
+ * @return Neo4JDrupal
+ */
+function neo4j_connector_get_client() {
+  return \Drupal::service('neo4j_connector');
 }
 
 /**

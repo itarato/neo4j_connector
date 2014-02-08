@@ -52,7 +52,7 @@ class Neo4JDrupal {
    * Constructor.
    * Use Neo4JDrupal::sharedInstance() instead.
    */
-  public function __construct(Client $client, $node_index_factory, $query_factory) {
+  public function __construct(Client $client, Neo4JDrupalIndexFactory $node_index_factory, Neo4JDrupalQueryFactory $query_factory) {
     $this->client = $client;
     $this->nodeIndexFactory = $node_index_factory;
     $this->queryFactory = $query_factory;
@@ -67,7 +67,7 @@ class Neo4JDrupal {
    * @param $query_class
    * @return Neo4JDrupal
    */
-  public static function createSharedInstance(Client $client, $node_index_class, $query_class) {
+  public static function createSharedInstance(Client $client, Neo4JDrupalIndexFactory $node_index_class, Neo4JDrupalQueryFactory $query_class) {
     self::$sharedInstance = new Neo4JDrupal($client, $node_index_class, $query_class);
     return self::$sharedInstance;
   }
@@ -81,7 +81,7 @@ class Neo4JDrupal {
     if (!self::$sharedInstance) {
       $config = \Drupal::config('neo4j_connector.site');
       $client = new Client($config->get('host'), $config->get('port'));
-      self::$sharedInstance = new Neo4JDrupal($client, 'Drupal\neo4j_connector\Neo4JDrupalIndexFactory', 'Drupal\neo4j_connector\Neo4JDrupalQueryFactory');
+      self::$sharedInstance = new Neo4JDrupal($client, new Neo4JDrupalIndexFactory(), new Neo4JDrupalQueryFactory());
     }
 
     return self::$sharedInstance;
@@ -98,7 +98,7 @@ class Neo4JDrupal {
 
     if (!isset($indexes[$index_name])) {
       $node_index_factory = $this->nodeIndexFactory;
-      $indexes[$index_name] = $node_index_factory::create($this->client, $index_name);
+      $indexes[$index_name] = $node_index_factory->create($this->client, $index_name);
       $indexes[$index_name]->save();
     }
 
@@ -116,7 +116,7 @@ class Neo4JDrupal {
    */
   public function query($template, $vars = array()) {
     $query_factory = $this->queryFactory;
-    $query = $query_factory::create($this->client, $template, $vars);
+    $query = $query_factory->create($this->client, $template, $vars);
     return $query->getResultSet();
   }
 
@@ -171,7 +171,7 @@ class Neo4JDrupal {
       $this->getIndex($indexParam->name)->add($node, $indexParam->key, $indexParam->value);
     }
 
-    watchdog(__FUNCTION__, 'Graph node has been created: @id', array('@id' => $node->getId()));
+    watchdog(__METHOD__, 'Graph node has been created: @id', array('@id' => $node->getId()));
 
     return $node;
   }
@@ -188,7 +188,7 @@ class Neo4JDrupal {
     if ($graph_node = $this->getGraphNodeOfIndex($indexParam)) {
       $this->getIndex($indexParam->name)->remove($graph_node);
       $graph_node->delete();
-      watchdog(__FUNCTION__, 'Graph node has been deleted: @nid', array('@nid' => $graph_node->getId()));
+      watchdog(__METHOD__, 'Graph node has been deleted: @nid', array('@nid' => $graph_node->getId()));
     }
   }
 

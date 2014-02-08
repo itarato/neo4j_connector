@@ -10,7 +10,7 @@ use Everyman\Neo4j\Cypher\Query;
 
 class Neo4JDrupalQueryFactory {
 
-  public static function create(Client $client, $template, array $vars = array()) {
+  public function create(Client $client, $template, array $vars = array()) {
     return new Query($client, $template, $vars);
   }
 

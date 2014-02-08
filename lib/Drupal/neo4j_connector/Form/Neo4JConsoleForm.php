@@ -33,7 +33,8 @@ class Neo4JConsoleForm extends FormBase {
 
   public function submitForm(array &$form, array &$form_state) {
     try {
-      $result_set = Neo4JDrupal::sharedInstance()->query($form_state['values']['query']);
+      $client = neo4j_connector_get_client();
+      $result_set = $client->query($form_state['values']['query']);
       $rows = $this->extractQueryResult($result_set);
       if (\Drupal::moduleHandler()->moduleExists('devel')) {
         dpm($rows);

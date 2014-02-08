@@ -18,7 +18,8 @@ class Neo4JController extends ControllerBase implements ContainerInjectionInterf
 
   public function adminSettings() {
     try {
-      Neo4JDrupal::sharedInstance()->client->getServerInfo();
+      $client = neo4j_connector_get_client();
+      $client->client->getServerInfo();
       drupal_set_message(t('Connection with Neo4J has been established.'));
     }
     catch (\Exception $e) {

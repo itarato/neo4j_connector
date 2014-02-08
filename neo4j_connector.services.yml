@@ -1,0 +1,14 @@
+services:
+  neo4jphp.client:
+    class: Everyman\Neo4j\Client
+    factory_service: neo4j_connector.library_factory
+    factory_method: create
+  neo4j_connector.library_factory:
+    class: Drupal\neo4j_connector\Neo4jDrupalLibraryFactory
+  neo4j_connector.query_factory:
+    class: Drupal\neo4j_connector\Neo4JDrupalQueryFactory
+  neo4j_connector.index_factory:
+    class: Drupal\neo4j_connector\Neo4JDrupalIndexFactory
+  neo4j_connector:
+    class: Drupal\neo4j_connector\Neo4JDrupal
+    arguments: ['@neo4jphp.client', '@neo4j_connector.index_factory', '@neo4j_connector.query_factory']

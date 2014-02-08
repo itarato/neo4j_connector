@@ -48,7 +48,8 @@ class Neo4JDrupalReferenceFieldHandler extends Neo4JDrupalAbstractFieldHandler {
   public function processFieldItem($value) {
     $this->indexParam->value = $value;
 
-    $referencedNode = Neo4JDrupal::sharedInstance()->getGraphNodeOfIndex($this->indexParam);
+    $client = neo4j_connector_get_client();
+    $referencedNode = $client->getGraphNodeOfIndex($this->indexParam);
 
     if (!$referencedNode) {
       $referencedNode = neo4j_connector_send_to_index_without_fields($this->refEntityType, $value);
