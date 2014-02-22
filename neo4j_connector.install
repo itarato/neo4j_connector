@@ -12,18 +12,19 @@ function neo4j_connector_schema() {
     'neo4j_connector_index' => array(
       'description' => 'Index for Neo4J db content.',
       'fields' => array(
-        'entity_id' => array(
-          'type' => 'varchar',
-          'length' => 255,
-          'not null' => TRUE,
-          'description' => 'Entity ID.',
-        ),
-        'entity_type' => array(
+        'domain' => array(
           'type' => 'varchar',
           'length' => 32,
           'not null' => TRUE,
           'default' => '',
-          'description' => 'Entity type.',
+          'description' => 'Domain of the indexed item, for example: entity.',
+        ),
+        'id' => array(
+          'type' => 'varchar',
+          'length' => 255,
+          'not null' => TRUE,
+          'default' => '',
+          'description' => 'Identifier of the indexed item within its domain.',
         ),
         'status' => array(
           'type' => 'int',
@@ -45,9 +46,10 @@ function neo4j_connector_schema() {
           'description' => 'Graph node ID from Neo4J db.',
         ),
       ),
-      'primary key' => array('entity_id', 'entity_type'),
+      'primary key' => array('domain', 'id'),
       'indexes' => array(
         'status' => array('status'),
+        'domain' => array('domain'),
       ),
     ),
   );

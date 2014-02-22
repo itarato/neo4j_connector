@@ -208,35 +208,6 @@ function neo4j_connector_cron_queue_info() {
   );
 }
 
-function _neo4j_connector_batch_op_mark_for_index($entity_type, $entity_id_key, &$context) {
-  if (empty($context['sandbox'])) {
-    $context['sandbox']['progress'] = 0;
-
-    $count_query = \Drupal::entityQuery($entity_type);
-    $context['sandbox']['count'] = $count_query->count()->execute();
-  }
-
-  // @todo add not-in-() using the existing indexed ids.
-
-  $query = \Drupal::entityQuery($entity_type);
-  $query->range($context['sandbox']['progress'], NEO4J_CONNECTOR_REINDEX_LIMIT);
-  $query->sort($entity_id_key);
-  $result = $query->execute();
-
-  foreach ($result as $entity_id) {
-    neo4j_connector_index_send_to_index($entity_type, $entity_id);
-    $context['sandbox']['progress']++;
-  }
-
-  $context['message'] = t('@current out of @total @type entity have been marked in the index.', array(
-    '@current' => $context['sandbox']['progress'],
-    '@total' => $context['sandbox']['count'],
-    '@type' => $entity_type,
-  ));
-  $finished = $context['sandbox']['count'] == 0 ? 1 : $context['sandbox']['progress'] / $context['sandbox']['count'];
-  $context['finished'] = $finished;
-}
-
 function _neo4j_connector_batch_op_reindex(&$context) {
   if (empty($context['sandbox'])) {
     $index_stat = neo4j_connector_index_get_stat();
@@ -300,23 +271,12 @@ function neo4j_connector_purge_db() {
   neo4j_connector_index_delete_all();
 }
 
-function neo4j_connector_send_content_to_index() {
-  $entity_types = Drupal::entityManager()->getDefinitions();
+function neo4j_connector_index_info() {
+  static $index_info = NULL;
 
-  $operations = array();
-  foreach ($entity_types as $type => $info) {
-    if (!$info->getKey('id')) {
-      // If there is no id entity key than it's probably not for querying. (via entity query)
-      // @todo keep an eye on it - maybe there will be a D8 solution sometime.
-      continue;
-    }
-    $operations[] = array('_neo4j_connector_batch_op_mark_for_index', array($type, $info->getKey('id')));
+  if (!$index_info) {
+    $index_info = \Drupal::moduleHandler()->invokeAll('neo4j_connector_index_info');
   }
 
-  $batch = array(
-    'operations' => $operations,
-    'title' => 'Re-indexing entities',
-  );
-
-  batch_set($batch);
+  return $index_info;
 }

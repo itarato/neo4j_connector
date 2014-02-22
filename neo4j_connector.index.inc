@@ -29,17 +29,17 @@ define('NEO4J_CONNECTOR_INDEX_STATUS_UPDATE',     3);
  * @param $entity_id
  *  Entity ID.
  */
-function neo4j_connector_index_send_to_index($entity_type, $entity_id) {
-  $index_status = neo4j_connector_index_get_index_status($entity_type, $entity_id);
+function neo4j_connector_index_send_to_index($domain, $id) {
+  $index_status = neo4j_connector_index_get_index_status($domain, $id);
 
   switch ($index_status) {
     case NEO4J_CONNECTOR_INDEX_STATUS_NOT_EXIST:
-      _neo4j_connector_index_mark($entity_type, $entity_id, NEO4J_CONNECTOR_INDEX_STATUS_INDEX);
+      _neo4j_connector_index_mark($domain, $id, NEO4J_CONNECTOR_INDEX_STATUS_INDEX);
       break;
 
     case NEO4J_CONNECTOR_INDEX_STATUS_DELETE:
     case NEO4J_CONNECTOR_INDEX_STATUS_INDEXED:
-      _neo4j_connector_index_mark($entity_type, $entity_id, NEO4J_CONNECTOR_INDEX_STATUS_UPDATE);
+      _neo4j_connector_index_mark($domain, $id, NEO4J_CONNECTOR_INDEX_STATUS_UPDATE);
       break;
 
     case NEO4J_CONNECTOR_INDEX_STATUS_INDEX:
@@ -48,10 +48,10 @@ function neo4j_connector_index_send_to_index($entity_type, $entity_id) {
       break;
 
     default:
-      watchdog(__FUNCTION__, 'Unexpected index status @status for entity: @entity_type - @entity_id', array(
+      watchdog(__FUNCTION__, 'Unexpected index status @status for: @domain - @id', array(
         '@status' => $index_status,
-        '@entity_type' => $entity_type,
-        '@entity_id' => $entity_id,
+        '@domain' => $domain,
+        '@id' => $id,
       ), WATCHDOG_ERROR);
       break;
   }
@@ -72,12 +72,12 @@ function neo4j_connector_index_send_to_index($entity_type, $entity_id) {
  *    NEO4J_CONNECTOR_INDEX_STATUS_DELETE
  *    NEO4J_CONNECTOR_INDEX_STATUS_UPDATE
  */
-function neo4j_connector_index_get_index_status($entity_type, $entity_id) {
+function neo4j_connector_index_get_index_status($domain, $id) {
   $result = db_query("
     SELECT status
     FROM {neo4j_connector_index}
-    WHERE entity_type = :entity_type AND entity_id = :entity_id
-  ", array(':entity_type' => $entity_type, ':entity_id' => $entity_id))->fetchField();
+    WHERE domain = :domain AND id = :id
+  ", array(':domain' => $domain, ':id' => $id))->fetchField();
 
   return $result === FALSE ? NEO4J_CONNECTOR_INDEX_STATUS_NOT_EXIST : $result;
 }
@@ -90,11 +90,11 @@ function neo4j_connector_index_get_index_status($entity_type, $entity_id) {
  * @param $entity_id
  *  Entity ID.
  */
-function neo4j_connector_index_delete($entity_type, $entity_id) {
+function neo4j_connector_index_delete($domain, $id) {
   db_query("
     DELETE FROM {neo4j_connector_index}
-    WHERE entity_type = :entity_type AND entity_id = :entity_id
-  ", array(':entity_type' => $entity_type, ':entity_id' => $entity_id));
+    WHERE domain = :domain AND id = :id
+  ", array(':domain' => $domain, ':id' => $id));
 }
 
 /**
@@ -115,18 +115,18 @@ function neo4j_connector_index_delete_all() {
  * @param $index_status
  *  Index status code.
  */
-function _neo4j_connector_index_mark($entity_type, $entity_id, $index_status) {
+function _neo4j_connector_index_mark($domain, $id, $index_status) {
   $result = db_query("
     SELECT *
     FROM {neo4j_connector_index}
-    WHERE entity_type = :entity_type AND entity_id = :entity_id
-  ", array(':entity_type' => $entity_type, ':entity_id' => $entity_id))->fetchObject();
+    WHERE domain = :domain AND id = :id
+  ", array(':domain' => $domain, ':id' => $id))->fetchObject();
 
   $index_item = NULL;
   if (!$result) {
     $index_item = new stdClass();
-    $index_item->entity_type = $entity_type;
-    $index_item->entity_id = $entity_id;
+    $index_item->domain = $domain;
+    $index_item->id = $id;
   }
   else {
     $index_item = $result;
@@ -139,7 +139,7 @@ function _neo4j_connector_index_mark($entity_type, $entity_id, $index_status) {
     drupal_write_record('neo4j_connector_index', $index_item);
   }
   else {
-    drupal_write_record('neo4j_connector_index', $index_item, array('entity_type', 'entity_id'));
+    drupal_write_record('neo4j_connector_index', $index_item, array('domain', 'id'));
   }
 }
 
@@ -162,6 +162,8 @@ function neo4j_connector_index_process_index($limit = NULL) {
   ", 0, $limit, array(':status' => NEO4J_CONNECTOR_INDEX_STATUS_INDEXED))->fetchAll();
 
   foreach ($records as $record) {
+//    neo4j_connector_ge
+
     $entity = entity_load($record->entity_type, $record->entity_id);
 
     // It's necessary to re-load the status: when indexing a content it might have a reference that is not indexed.

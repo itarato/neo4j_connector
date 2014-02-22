@@ -33,13 +33,13 @@ A views plugin is under development - a demo version is already in the repositor
 * Download [Neo4J database driver](http://www.neo4j.org/download)
 * Install Drupal and add this module
 * With Composer install the PHP Driver. [Follow the instructions](https://github.com/jadell/neo4jphp).
- * cd PATH_TO_MODULE/
- * composer install (or php composer.phar install)
+  * cd PATH_TO_MODULE/
+  * composer install (or php composer.phar install)
 * Run the Neo4J database server:
- * cd PATH_TO_NEO4J/bin
- * ./neo4j start
+  * cd PATH_TO_NEO4J/bin
+  * ./neo4j start
 * Verify it's running:
- * (by default:) http://localhost:7474/browser/
+  * (by default:) http://localhost:7474/browser/
 
 
 # Drush commands
