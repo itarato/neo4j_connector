@@ -219,6 +219,7 @@ function neo4j_connector_index_process_index($limit = NULL) {
  */
 function neo4j_connector_index_get_stat() {
   $stat = array();
+  return array();
 
   $stat['total'] = db_query("SELECT COUNT(*) FROM {neo4j_connector_index}")->fetchField();
 

@@ -1,13 +1,11 @@
 <?php
 /**
- * Created by PhpStorm.
- * User: itarato
- * Date: 2/20/14
- * Time: 7:22 AM
+ * @file
  */
 
 namespace Drupal\neo4j_entity_index;
 
+use Drupal\neo4j_connector\INeo4JIndexer;
 
 class Neo4JEntityIndexer implements INeo4JIndexer {
 
@@ -15,7 +13,7 @@ class Neo4JEntityIndexer implements INeo4JIndexer {
    * Adds all items to the index.
    */
   public function markAllForIndex() {
-    $entity_types = Drupal::entityManager()->getDefinitions();
+    $entity_types = \Drupal::entityManager()->getDefinitions();
 
     $operations = array();
     foreach ($entity_types as $type => $info) {
@@ -24,7 +22,7 @@ class Neo4JEntityIndexer implements INeo4JIndexer {
         // @todo keep an eye on it - maybe there will be a D8 solution sometime.
         continue;
       }
-      $operations[] = array('_neo4j_connector_batch_op_mark_for_index', array($type, $info->getKey('id')));
+      $operations[] = array('neo4j_entity_index_batch_op_mark_for_index', array($type, $info->getKey('id')));
     }
 
     $batch = array(
@@ -32,6 +30,16 @@ class Neo4JEntityIndexer implements INeo4JIndexer {
       'title' => 'Re-indexing entities',
     );
 
+    batch_set($batch);
+  }
+
+  public function indexAll() {
+    $batch = array(
+      'operations' => array(
+        array('neo4j_entity_index_batch_op_reindex', array()),
+      ),
+      'title' => 'Send index to Neo4J',
+    );
     batch_set($batch);
   }
 
@@ -48,4 +56,16 @@ class Neo4JEntityIndexer implements INeo4JIndexer {
   public function getStatistics() {
     // TODO: Implement getStatistics() method.
   }
+
+  /**
+   * @return Neo4JEntityIndexer
+   */
+  public static function getInstance() {
+    static $self;
+    if (!$self) {
+      $self = new Neo4JEntityIndexer();
+    }
+    return $self;
+  }
+
 }

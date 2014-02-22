@@ -17,10 +17,17 @@ class Neo4JMarkForIndexForm extends FormBase {
     return 'neo4j_connector_form_mark_for_index';
   }
 
-  public function buildForm(array $form, array &$form_state) {
+  public function buildForm(array $form, array &$form_state, array $neo4j_connector_index = NULL) {
+    $form['#title'] = t('Mark all %index for index', array('%index' => $neo4j_connector_index));
+
+    $form['index'] = array(
+      '#type' => 'value',
+      '#value' => $neo4j_connector_index,
+    );
+
     $form['submit'] = array(
       '#type' => 'submit',
-      '#value' => t('Mark all entities to the index'),
+      '#value' => t('Proceed'),
     );
 
     return $form;
@@ -30,7 +37,9 @@ class Neo4JMarkForIndexForm extends FormBase {
   }
 
   public function submitForm(array &$form, array &$form_state) {
-    neo4j_connector_send_content_to_index();
+    $index = neo4j_connector_index_load($form_state['values']['index']);
+    $indexer = $index['class']::getInstance();
+    $indexer->markAllForIndex();
   }
 
 }

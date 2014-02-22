@@ -3,12 +3,17 @@
 namespace Drupal\neo4j_connector;
 
 
-interface INeo4JIndexer {
+interface INeo4JIndexer extends INeo4JSingleton {
 
   /**
-   * Adds all items to the index.
+   * Mark items for indexing.
    */
   public function markAllForIndex();
+
+  /**
+   * Index all items.
+   */
+  public function indexAll();
 
   /**
    * For indexing fetch data.
@@ -20,4 +25,4 @@ interface INeo4JIndexer {
    */
   public function getStatistics();
 
-} 
+}

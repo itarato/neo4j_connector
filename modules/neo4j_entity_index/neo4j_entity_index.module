@@ -3,15 +3,16 @@
  * @file
  */
 
-function neo4j_connector_neo4j_connector_index_info() {
+function neo4j_entity_index_neo4j_connector_index_info() {
   return array(
     'entity' => array(
+      'label' => t('Entity index'),
       'class' => 'Drupal\neo4j_entity_index\Neo4JEntityIndexer',
     ),
   );
 }
 
-function _neo4j_connector_batch_op_mark_for_index($entity_type, $entity_id_key, &$context) {
+function neo4j_entity_index_batch_op_mark_for_index($entity_type, $entity_id_key, &$context) {
   if (empty($context['sandbox'])) {
     $context['sandbox']['progress'] = 0;
 
@@ -27,9 +28,7 @@ function _neo4j_connector_batch_op_mark_for_index($entity_type, $entity_id_key, 
   $result = $query->execute();
 
   foreach ($result as $entity_id) {
-
-    // @todo prepare the
-    neo4j_connector_index_send_to_index($entity_type, $entity_id);
+    neo4j_connector_index_send_to_index('entity', "$entity_type:$entity_id");
     $context['sandbox']['progress']++;
   }
 
@@ -41,5 +40,3 @@ function _neo4j_connector_batch_op_mark_for_index($entity_type, $entity_id_key, 
   $finished = $context['sandbox']['count'] == 0 ? 1 : $context['sandbox']['progress'] / $context['sandbox']['count'];
   $context['finished'] = $finished;
 }
-
-

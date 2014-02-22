@@ -271,6 +271,11 @@ function neo4j_connector_purge_db() {
   neo4j_connector_index_delete_all();
 }
 
+function neo4j_connector_index_load($index) {
+  $index_info = neo4j_connector_index_info();
+  return $index_info[$index];
+}
+
 function neo4j_connector_index_info() {
   static $index_info = NULL;
 

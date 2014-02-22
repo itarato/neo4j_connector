@@ -50,6 +50,7 @@ function neo4j_connector_schema() {
       'indexes' => array(
         'status' => array('status'),
         'domain' => array('domain'),
+        'id' => array('id'),
       ),
     ),
   );

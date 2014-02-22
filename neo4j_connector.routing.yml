@@ -38,6 +38,22 @@ neo4j_connector.settings:
   requirements:
     _permission: 'administer neo4j connector configuration'
 
+neo4j_connector.index.purge:
+  path: '/admin/config/neo4j/settings/index/{neo4j_connector_index}/mark_for_index'
+  defaults:
+    _title: 'Mark for index'
+    _form: 'Drupal\neo4j_connector\Form\Neo4JMarkForIndexForm'
+  requirements:
+    _permission: 'administer neo4j connector configuration'
+
+neo4j_connector.index.index:
+  path: '/admin/config/neo4j/settings/index/{neo4j_connector_index}/index'
+  defaults:
+    _title: 'Index'
+    _form: 'Drupal\neo4j_connector\Form\Neo4JReindexForm'
+  requirements:
+    _permission: 'administer neo4j connector configuration'
+
 neo4j_connector.console:
   path: '/admin/config/neo4j/console'
   defaults:
