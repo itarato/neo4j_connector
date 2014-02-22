@@ -162,42 +162,30 @@ function neo4j_connector_index_process_index($limit = NULL) {
   ", 0, $limit, array(':status' => NEO4J_CONNECTOR_INDEX_STATUS_INDEXED))->fetchAll();
 
   foreach ($records as $record) {
-//    neo4j_connector_ge
-
-    $entity = entity_load($record->entity_type, $record->entity_id);
-
     // It's necessary to re-load the status: when indexing a content it might have a reference that is not indexed.
     // In that case we need to pre-index the referenced item (without fields) in order to be able to reference that.
     // That action will change the referenced item status to UPDATED. Since here the query is already in PHP
     // we have to make sure we fetch the up-to-date status.
-    $status = neo4j_connector_index_get_index_status($record->entity_type, $record->entity_id);
+    $status = neo4j_connector_index_get_index_status($record->domain, $record->id);
 
     switch ($status) {
       case NEO4J_CONNECTOR_INDEX_STATUS_INDEX:
-        $graph_node = neo4j_connector_add_entity_to_neo4j($entity);
+        $graph_node = neo4j_connector_index_add_node($record->domain, $record->id, TRUE);
         break;
 
       case NEO4J_CONNECTOR_INDEX_STATUS_UPDATE:
-        $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . $record->entity_type, 'entity_id', $record->entity_id);
-
-        $properties = array();
-        \Drupal::moduleHandler()->alter('neo4j_connector_entity_properties', $properties, $entity, $record->entity_type);
-
-        $graph_node = Neo4JDrupal::sharedInstance()->updateEntity($entity, $properties, $indexParam);
+        $graph_node = neo4j_connector_index_update_node($record->domain, $record->id);
         break;
 
       case NEO4J_CONNECTOR_INDEX_STATUS_DELETE:
-        $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . $record->entity_type, 'entity_id', $record->entity_id);
-        Neo4JDrupal::sharedInstance()->deleteEntity($entity, $record->entity_type, $indexParam);
-
-        neo4j_connector_index_delete($record->entity_type, $record->entity_id);
+        neo4j_connector_index_delete_node($record->domain, $record->id);
         break;
 
       default:
         watchdog(__FUNCTION__, 'Unexpected index status @status for entity: @entity_type-@entity_id', array(
           '@status' => $status,
-          '@entity_type' => $record->entity_type,
-          '@entity_id' => $record->entity_id,
+          '@domain' => $record->domain,
+          '@id' => $record->id,
         ), WATCHDOG_ERROR);
         break;
     }
@@ -206,7 +194,7 @@ function neo4j_connector_index_process_index($limit = NULL) {
       $record->remote_id = $graph_node->getId();
       $record->status = NEO4J_CONNECTOR_INDEX_STATUS_INDEXED;
       $record->changed = $_SERVER['REQUEST_TIME'];
-      drupal_write_record('neo4j_connector_index', $record, array('entity_type', 'entity_id'));
+      drupal_write_record('neo4j_connector_index', $record, array('domain', 'id'));
     }
   }
 }
@@ -255,4 +243,46 @@ function neo4j_connector_index_get_stat() {
   }
 
   return $stat;
+}
+
+function neo4j_connector_index_add_node($domain, $id, $include_relatioships = TRUE) {
+  list($index_param, $properties, $labels) = neo4j_connector_index_get_node_info_from_index($domain, $id);
+  $graph_node = Neo4JDrupal::sharedInstance()->addNode($properties, $labels, $index_param);
+
+  if ($include_relatioships) {
+    \Drupal::moduleHandler()->invokeAll('neo4j_connector_graph_node_update', array($graph_node, $domain, $id));
+  }
+
+  return $graph_node;
+}
+
+function neo4j_connector_index_update_node($domain, $id) {
+  list($index_param, $properties, $labels) = neo4j_connector_index_get_node_info_from_index($domain, $id);
+  $graph_node = Neo4JDrupal::sharedInstance()->updateNode($properties, $labels, $index_param);
+  return $graph_node;
+}
+
+function neo4j_connector_index_delete_node($domain, $id) {
+  $index_info = neo4j_connector_index_info();
+  $indexParam = $index_info[$record->domain]['index param callback']($domain, $id);
+  neo4j_connector_get_client()->deleteNode($indexParam);
+  neo4j_connector_index_delete($domain, $id);
+}
+
+/**
+ * @param $domain
+ * @param $id
+ * @return array
+ */
+function neo4j_connector_index_get_node_info_from_index($domain, $id) {
+  $index_info = neo4j_connector_index_info();
+  $index_param = $index_info[$domain]['index param callback']($domain, $id);
+
+  $properties = array();
+  \Drupal::moduleHandler()->alter('neo4j_connector_properties', $properties, $domain, $id);
+
+  $labels = array();
+  \Drupal::moduleHandler()->alter('neo4j_connector_labels', $labels, $domain, $id);
+
+  return array($index_param, $properties, $labels);
 }

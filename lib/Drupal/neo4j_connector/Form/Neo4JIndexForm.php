@@ -8,8 +8,8 @@
 
 namespace Drupal\neo4j_connector\Form;
 
-
 use Drupal\Core\Form\FormBase;
+use Drupal\neo4j_connector\Neo4JDrupalIndexStat;
 
 class Neo4JIndexForm extends FormBase {
 
@@ -18,23 +18,21 @@ class Neo4JIndexForm extends FormBase {
   }
 
   public function buildForm(array $form, array &$form_state) {
-//
-//    $index_stat = neo4j_connector_index_get_stat();
-//    $form['stat'] = array(
-//      '#markup' => t('@indexed / @total are in the database.', array(
-//        '@indexed' => $index_stat['indexed'],
-//        '@total' => $index_stat['total'],
-//      )),
-//      '#prefix' => '<div>',
-//      '#suffix' => '</div>',
-//    );
+    $form['stat'] = array(
+      '#markup' => t('@indexed / @total are in the database.', array(
+        '@indexed' => Neo4JDrupalIndexStat::getIndexed(),
+        '@total' => Neo4JDrupalIndexStat::getTotal(),
+      )),
+      '#prefix' => '<div>',
+      '#suffix' => '</div>',
+    );
 
     $form['submit'] = array(
       '#type' => 'submit',
-      '#value' => t('Proceed'),
+      '#value' => t('Index'),
       // Markup has no nesting. This div makes sure it's the first child and properly aligned.
-//      '#prefix' => '<div>',
-//      '#suffix' => '</div>',
+      '#prefix' => '<div>',
+      '#suffix' => '</div>',
     );
 
     return $form;

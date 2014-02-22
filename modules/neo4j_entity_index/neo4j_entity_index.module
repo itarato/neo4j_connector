@@ -3,13 +3,133 @@
  * @file
  */
 
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\field\Field;
+use Drupal\neo4j_connector\Neo4JDrupalIndexParam;
+use Drupal\neo4j_entity_index\Neo4JDrupalFieldHandlerFactory;
+
+define('NEO4J_ENTITY_INDEX_DOMAIN', 'entity');
+
 function neo4j_entity_index_neo4j_connector_index_info() {
   return array(
-    'entity' => array(
+    NEO4J_ENTITY_INDEX_DOMAIN => array(
       'label' => t('Entity index'),
-      'class' => 'Drupal\neo4j_entity_index\Neo4JEntityIndexer',
+      'index marker callback' => 'neo4j_entity_index_mark_for_index',
+      'index param callback' => 'neo4j_entity_index_get_index_param',
     ),
   );
+}
+
+/**
+ * Implement hook_entity_insert().
+ */
+function neo4j_entity_index_entity_insert(EntityInterface $entity) {
+  neo4j_connector_index_send_to_index(NEO4J_ENTITY_INDEX_DOMAIN, "{$entity->entityType()}:{$entity->id()}");
+}
+
+/**
+ * Implement hook_entity_update().
+ */
+function neo4j_entity_index_entity_update(EntityInterface $entity) {
+  neo4j_connector_index_send_to_index(NEO4J_ENTITY_INDEX_DOMAIN, "{$entity->entityType()}:{$entity->id()}");
+}
+
+/**
+ * Implement hook_entity_delete().
+ */
+function neo4j_entity_index_entity_delete(EntityInterface $entity) {
+  $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . $entity->entityType(), 'entity_id', $entity->id());
+  neo4j_connector_get_client()->deleteNode($indexParam);
+  neo4j_connector_index_delete(NEO4J_ENTITY_INDEX_DOMAIN, "{$entity->entityType()}:{$entity->id()}");
+}
+
+/**
+ * @param $entity_type
+ * @param $entity_id
+ *
+ * @return \Everyman\Neo4j\Node|FALSE
+ */
+function neo4j_entity_index_send_to_index_without_fields($entity_type, $entity_id) {
+  $node = neo4j_connector_index_add_node(NEO4J_ENTITY_INDEX_DOMAIN, "$entity_type:$entity_id", FALSE);
+
+  if ($node) {
+    _neo4j_connector_index_mark($entity_type, $entity_id, NEO4J_CONNECTOR_INDEX_STATUS_UPDATE);
+    return $node;
+  }
+  else {
+    watchdog(__FUNCTION__, 'Graph node could not be created. Type: @type id: @id.', array('@type' => $entity_type, '@id' => $entity_id), WATCHDOG_ERROR);
+  }
+
+  return FALSE;
+}
+
+/**
+ * Helper function to collect graph node properties of a node to store.
+ *
+ * @param $properties
+ *  Property array.
+ * @param $entity
+ *  Node object.
+ * @return array
+ *  Property key value array.
+ */
+function neo4j_entity_index_neo4j_connector_properties_alter(array &$properties, $domain, $id) {
+  if ($domain != NEO4J_ENTITY_INDEX_DOMAIN) {
+    return;
+  }
+
+  $entity = neo4j_entity_index_get_entity_by_index_id($id);
+
+  switch ($entity->entityType()) {
+    case 'node':
+      $properties['title'] = $entity->title[0]->getValue()['value'];
+      break;
+
+    case 'user':
+      $properties['name'] = $entity->name[0]->getValue()['value'];
+      $properties['mail'] = $entity->mail[0]->getValue()['value'];
+      break;
+  }
+
+  $properties['entity_id'] = $entity->id();
+  $properties['entity_type'] = $entity->entityType();
+  $properties['entity_bundle'] = $entity->bundle();
+}
+
+/**
+ * @param array $labels
+ * @param EntityInterface $entity
+ */
+function neo4j_entity_index_neo4j_connector_labels_alter(array &$labels, $domain, $id) {
+  if ($domain != NEO4J_ENTITY_INDEX_DOMAIN) {
+    return;
+  }
+
+  $entity = neo4j_entity_index_get_entity_by_index_id($id);
+
+  $labels[] = 'entity';
+  $labels[] = 'entity:' . $entity->entityType();
+}
+
+function neo4j_entity_index_mark_for_index() {
+  $entity_types = \Drupal::entityManager()->getDefinitions();
+
+  $operations = array();
+  foreach ($entity_types as $type => $info) {
+    if (!$info->getKey('id')) {
+      // If there is no id entity key than it's probably not for querying. (via entity query)
+      // @todo keep an eye on it - maybe there will be a D8 solution sometime.
+      continue;
+    }
+    $operations[] = array('neo4j_entity_index_batch_op_mark_for_index', array($type, $info->getKey('id')));
+  }
+
+  $batch = array(
+    'operations' => $operations,
+    'title' => 'Re-indexing entities',
+  );
+
+  batch_set($batch);
 }
 
 function neo4j_entity_index_batch_op_mark_for_index($entity_type, $entity_id_key, &$context) {
@@ -39,4 +159,30 @@ function neo4j_entity_index_batch_op_mark_for_index($entity_type, $entity_id_key
   ));
   $finished = $context['sandbox']['count'] == 0 ? 1 : $context['sandbox']['progress'] / $context['sandbox']['count'];
   $context['finished'] = $finished;
+}
+
+function neo4j_entity_index_get_index_param($domain, $id) {
+  list($entity_type, $entity_id) = explode(':', $id);
+  return new \Drupal\neo4j_connector\Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . $entity_type, 'entity_id', $entity_id);
+}
+
+function neo4j_entity_index_neo4j_connector_graph_node_update(\Everyman\Neo4j\Node $graph_node, $domain, $id) {
+  $entity = neo4j_entity_index_get_entity_by_index_id($id);
+
+  $field_instances = Field::fieldInfo()->getBundleInstances($entity->entityType(), $entity->bundle());
+  foreach ($field_instances as $field_instance) {
+    $field_info = Field::fieldInfo()->getField($entity->entityType(), $field_instance->field_name);
+    if ($neo4jFieldHandler = Neo4JDrupalFieldHandlerFactory::getInstance($field_info, $graph_node)) {
+      $neo4jFieldHandler->processFieldData($entity, $field_instance->field_name);
+    }
+  }
+}
+
+/**
+ * @param $id
+ * @return \Drupal\Core\Entity\EntityInterface
+ */
+function neo4j_entity_index_get_entity_by_index_id($id) {
+  list($entity_type, $entity_id) = explode(':', $id);
+  return entity_load($entity_type, $entity_id);
 }

@@ -1,9 +1,6 @@
 <?php
 /**
- * Created by PhpStorm.
- * User: itarato
- * Date: 12/26/13
- * Time: 11:38 AM
+ * @file
  */
 
 namespace Drupal\neo4j_connector\Form;
@@ -38,8 +35,8 @@ class Neo4JMarkForIndexForm extends FormBase {
 
   public function submitForm(array &$form, array &$form_state) {
     $index = neo4j_connector_index_load($form_state['values']['index']);
-    $indexer = $index['class']::getInstance();
-    $indexer->markAllForIndex();
+    $index['index marker callback']();
+    $form_state['redirect'] = 'admin/config/neo4j/settings';
   }
 
 }

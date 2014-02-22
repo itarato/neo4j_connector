@@ -6,7 +6,8 @@
  * Time: 12:47 AM
  */
 
-namespace Drupal\neo4j_connector;
+namespace Drupal\neo4j_entity_index;
+
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Language\Language;
 use Drupal\field\Entity\Field;

@@ -4,7 +4,7 @@
  * Field handler classes.
  */
 
-namespace Drupal\neo4j_connector;
+namespace Drupal\neo4j_entity_index;
 
 use Drupal\field\Entity\Field;
 use Everyman\Neo4j\Node;
@@ -52,7 +52,7 @@ class Neo4JDrupalReferenceFieldHandler extends Neo4JDrupalAbstractFieldHandler {
     $referencedNode = $client->getGraphNodeOfIndex($this->indexParam);
 
     if (!$referencedNode) {
-      $referencedNode = neo4j_connector_send_to_index_without_fields($this->refEntityType, $value);
+      $referencedNode = neo4j_entity_index_send_to_index_without_fields($this->refEntityType, $value);
     }
 
     if ($referencedNode) {

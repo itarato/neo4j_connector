@@ -3,7 +3,7 @@
  * @file
  */
 
-namespace Drupal\neo4j_connector;
+namespace Drupal\neo4j_entity_index;
 
 use Drupal\field\Entity\Field;
 use Everyman\Neo4j\Label;

@@ -6,8 +6,6 @@
 
 namespace Drupal\neo4j_connector;
 
-use Drupal\Core\Entity\EntityInterface;
-use Drupal\field\Field;
 use Everyman\Neo4j\Client;
 use Everyman\Neo4j\Index\NodeIndex;
 use Everyman\Neo4j\Label;
@@ -121,36 +119,30 @@ class Neo4JDrupal {
   }
 
   /**
-   * Adds a new Drupal entity to the DB.
+   * Adds a new index to the DB.
    * Also takes care about fields.
    *
-   * @param $entity
-   *  Entity object.
    * @param array $properties
    *  Properties array to store on the graph node.
-   * @param Neo4JDrupalIndexParam $index_param
-   *  Index to locate the new node.
    * @param $labels
    *  Array of label strings.
-   * @param $add_fields
-   *  Boolean flag - if processing fields is necessary. Default is TRUE.
+   * @param Neo4JDrupalIndexParam $index_param
+   *  Index to locate the new node.
    *
    * @return Node
    *  Created graph node object.
    */
-  public function addEntity($entity, array $properties, Neo4JDrupalIndexParam $index_param = NULL, array $labels = array(), $add_fields = TRUE) {
-    $node = $this->addGraphNode($properties, $index_param);
+  public function addNode(array $properties, array $labels = array(), Neo4JDrupalIndexParam $index_param = NULL) {
+    $graph_node = $this->addGraphNode($properties, $index_param);
+
+    // Labels.
     $label_objects = array();
     foreach ($labels as $label_string) {
       $label_objects[] = new Label($this->client, $label_string);
     }
-    $node->addLabels($label_objects);
+    $graph_node->addLabels($label_objects);
 
-    if ($add_fields) {
-      $this->addEntityFields($entity, $node);
-    }
-
-    return $node;
+    return $graph_node;
   }
 
   /**
@@ -182,7 +174,7 @@ class Neo4JDrupal {
    * @param Neo4JDrupalIndexParam $indexParam
    *  Index.
    */
-  public function deleteEntity(Neo4JDrupalIndexParam $indexParam) {
+  public function deleteNode(Neo4JDrupalIndexParam $indexParam) {
     $this->deleteRelationships($indexParam);
 
     if ($graph_node = $this->getGraphNodeOfIndex($indexParam)) {
@@ -208,63 +200,36 @@ class Neo4JDrupal {
   }
 
   /**
-   * Update a Drupal entity.
+   * Update a graph node.
    * Removes and reestablish all relationships (fields and references).
    *
-   * @param $entity
-   *  Drupal entity.
    * @param array $properties
    *  Properties to store.
+   * @param $labels
    * @param Neo4JDrupalIndexParam $index_param
    *  Index.
    *
    * @return Node
    */
-  public function updateEntity($entity, array $properties, Neo4JDrupalIndexParam $index_param = NULL) {
-    $gnode = $this->getGraphNodeOfIndex($index_param);
-    $gnode->setProperties($properties);
-    $gnode->save();
+  public function updateNode(array $properties, array $labels = array(), Neo4JDrupalIndexParam $index_param = NULL) {
+    // @todo possible duplication of AddNode - wrap it
+    $graph_node = $this->getGraphNodeOfIndex($index_param);
+    $graph_node->setProperties($properties);
+    $graph_node->save();
 
-    $relationships = $gnode->getRelationships();
+    // Labels.
+    $label_objects = array();
+    foreach ($labels as $label_string) {
+      $label_objects[] = new Label($this->client, $label_string);
+    }
+    $graph_node->addLabels($label_objects);
+
+    $relationships = $graph_node->getRelationships();
     foreach ($relationships as $relationship) {
       $relationship->delete();
     }
 
-    $this->addEntityFields($entity, $gnode);
-    return $gnode;
-  }
-
-  /**
-   * Create field relationships of an entity.
-   *
-   * @param $entity
-   *  Drupal entity.
-   * @param $node
-   *  Graph node.
-   */
-  public function addEntityFields(EntityInterface $entity, Node $node) {
-    $field_instances = Field::fieldInfo()->getBundleInstances($entity->entityType(), $entity->bundle());
-    foreach ($field_instances as $field_instance) {
-      $field_info = Field::fieldInfo()->getField($entity->entityType(), $field_instance->field_name);
-      if ($neo4jFieldHandler = Neo4JDrupalFieldHandlerFactory::getInstance($field_info, $node)) {
-        $neo4jFieldHandler->processFieldData($entity, $field_instance->field_name);
-      }
-    }
-  }
-
-  /**
-   * Fetch a graph node of a Drupal entity.
-   *
-   * @param $entity_type
-   *  Entity type string.
-   * @param $id
-   *  Entity id integer.
-   * @return bool|Node
-   *  Graph node object, or FALSE if not exist.
-   */
-  public function getGraphNodeOfEntity($entity_type, $id) {
-    $index_param = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . $entity_type, 'entity_id', $id);
-    return $this->getGraphNodeOfIndex($index_param);
+    return $graph_node;
   }
 
   /**

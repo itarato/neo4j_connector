@@ -7,6 +7,7 @@
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\neo4j_connector\Neo4JDrupal;
 use Drupal\neo4j_connector\Neo4JDrupalIndexParam;
+use Drupal\neo4j_connector\Neo4JDrupalIndexStat;
 
 require_once __DIR__ . '/neo4j_connector.index.inc';
 
@@ -100,30 +101,6 @@ function neo4j_connector_get_client() {
 }
 
 /**
- * Implement hook_entity_insert().
- */
-function neo4j_connector_entity_insert(EntityInterface $entity) {
-  neo4j_connector_index_send_to_index($entity->entityType(), $entity->id());
-}
-
-/**
- * Implement hook_entity_update().
- */
-function neo4j_connector_entity_update(EntityInterface $entity) {
-  neo4j_connector_index_send_to_index($entity->entityType(), $entity->id());
-}
-
-/**
- * Implement hook_entity_delete().
- */
-function neo4j_connector_entity_delete(EntityInterface $entity) {
-  $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . $entity->entityType(), 'entity_id', $entity->id());
-  Neo4JDrupal::sharedInstance()->deleteEntity($entity, $entity->entityType(), $indexParam);
-
-  neo4j_connector_index_delete($entity->entityType(), $entity->id());
-}
-
-/**
  * Implements hook_permission().
  */
 function neo4j_connector_permission() {
@@ -137,59 +114,6 @@ function neo4j_connector_permission() {
       'description' => t('Administer global settings for the graph database.'),
     ),
   );
-}
-
-/**
- * @param EntityInterface $entity
- * @param bool $include_fields
- * @return \Everyman\Neo4j\Node
- */
-function neo4j_connector_add_entity_to_neo4j(EntityInterface $entity, $include_fields = TRUE) {
-  $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . $entity->entityType(), 'entity_id', $entity->id());
-
-  $properties = array();
-  \Drupal::moduleHandler()->alter('neo4j_connector_entity_properties', $properties, $entity);
-
-  $labels = array();
-  \Drupal::moduleHandler()->alter('neo4j_connector_entity_labels', $labels, $entity);
-
-  return Neo4JDrupal::sharedInstance()->addEntity($entity, $properties, $indexParam, $labels, $include_fields);
-}
-
-/**
- * Helper function to collect graph node properties of a node to store.
- *
- * @param $properties
- *  Property array.
- * @param $entity
- *  Node object.
- * @return array
- *  Property key value array.
- */
-function neo4j_connector_neo4j_connector_entity_properties_alter(array &$properties, EntityInterface $entity) {
-  switch ($entity->entityType()) {
-    case 'node':
-      $properties['title'] = $entity->title[0]->getValue()['value'];
-      break;
-
-    case 'user':
-      $properties['name'] = $entity->name[0]->getValue()['value'];
-      $properties['mail'] = $entity->mail[0]->getValue()['value'];
-      break;
-  }
-
-  $properties['entity_id'] = $entity->id();
-  $properties['entity_type'] = $entity->entityType();
-  $properties['bundle'] = $entity->bundle();
-}
-
-/**
- * @param array $labels
- * @param EntityInterface $entity
- */
-function neo4j_connector_neo4j_connector_entity_labels_alter(array &$labels, EntityInterface $entity) {
-  $labels[] = 'entity';
-  $labels[] = 'entity:' . $entity->entityType();
 }
 
 /**
@@ -210,38 +134,15 @@ function neo4j_connector_cron_queue_info() {
 
 function _neo4j_connector_batch_op_reindex(&$context) {
   if (empty($context['sandbox'])) {
-    $index_stat = neo4j_connector_index_get_stat();
-    $context['sandbox']['total'] = $index_stat['non-indexed'];
+    $context['sandbox']['total'] = Neo4JDrupalIndexStat::getNotIndexed();
   }
 
   neo4j_connector_index_process_index();
 
-  $index_stat = neo4j_connector_index_get_stat();
-
-  $context['message'] = t('@count item(s) left.', array('@count' => $index_stat['non-indexed']));
-  $finished = $index_stat['non-indexed'] == 0 ? 1 : $index_stat['non-indexed'] / $context['sandbox']['total'];
+  $not_indexed_count = Neo4JDrupalIndexStat::getNotIndexed();
+  $context['message'] = t('@count item(s) left.', array('@count' => $not_indexed_count));
+  $finished = $not_indexed_count == 0 ? 1 : $not_indexed_count / $context['sandbox']['total'];
   $context['finished'] = $finished;
-}
-
-/**
- * @param $entity_type
- * @param $entity_id
- *
- * @return \Everyman\Neo4j\Node|FALSE
- */
-function neo4j_connector_send_to_index_without_fields($entity_type, $entity_id) {
-  $entity = entity_load($entity_type, $entity_id);
-  $node = neo4j_connector_add_entity_to_neo4j($entity, FALSE);
-
-  if ($node) {
-    _neo4j_connector_index_mark($entity_type, $entity_id, NEO4J_CONNECTOR_INDEX_STATUS_UPDATE);
-    return $node;
-  }
-  else {
-    watchdog(__FUNCTION__, 'Graph node could not be created. Type: @type id: @id.', array('@type' => $entity_type, '@id' => $entity_id), WATCHDOG_ERROR);
-  }
-
-  return FALSE;
 }
 
 /**
@@ -276,6 +177,9 @@ function neo4j_connector_index_load($index) {
   return $index_info[$index];
 }
 
+/**
+ * @return array
+ */
 function neo4j_connector_index_info() {
   static $index_info = NULL;
 

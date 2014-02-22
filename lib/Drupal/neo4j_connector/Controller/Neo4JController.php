@@ -39,7 +39,6 @@ class Neo4JController extends ControllerBase implements ContainerInjectionInterf
       $rows[] = array(
         $index['label'],
         l(t('Mark all for index'), 'admin/config/neo4j/settings/index/' . $key . '/mark_for_index'),
-        l(t('Index'), 'admin/config/neo4j/settings/index/' . $key . '/index'),
       );
     }
 
@@ -47,7 +46,7 @@ class Neo4JController extends ControllerBase implements ContainerInjectionInterf
     $purge_form = \Drupal::formBuilder()->getForm('Drupal\neo4j_connector\Form\Neo4JPurgeDBForm');
     $reindex_form = \Drupal::formBuilder()->getForm('Drupal\neo4j_connector\Form\Neo4JIndexForm');
 
-    $indexes = theme('table', array('rows' => $rows, 'header' => array(t('Index'), NULL, NULL)));
+    $indexes = theme('table', array('rows' => $rows, 'header' => array(t('Index'), NULL)));
 
     return drupal_render($settings_form) .
       $indexes .
