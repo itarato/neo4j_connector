@@ -5,8 +5,9 @@
 
 namespace Drupal\neo4j_entity_index;
 
-use Drupal\field\Entity\Field;
 use Everyman\Neo4j\Node;
+use Drupal\field\Entity\Field;
+use Drupal\neo4j_connector\Neo4JDrupalIndexParam;
 
 /**
  * Class Neo4JDrupalFieldHandlerFactory

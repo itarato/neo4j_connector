@@ -1,27 +1,3 @@
-neo4j_connector.node_info:
-  path: '/node/{node}/graph'
-  defaults:
-    _content: '\Drupal\neo4j_connector\Controller\Neo4JPageController::nodeGraphInfo'
-    _title: 'Graph info'
-  requirements:
-    _permission: 'access neo4j graph information'
-
-neo4j_connector.user_info:
-  path: '/user/{user}/graph'
-  defaults:
-    _content: '\Drupal\neo4j_connector\Controller\Neo4JPageController::userGraphInfo'
-    _title: 'Graph info'
-  requirements:
-    _permission: 'access neo4j graph information'
-
-neo4j_connector.term_info:
-  path: '/taxonomy/term/{taxonomy_term}/graph'
-  defaults:
-    _content: '\Drupal\neo4j_connector\Controller\Neo4JPageController::termGraphInfo'
-    _title: 'Graph info'
-  requirements:
-    _permission: 'access neo4j graph information'
-
 neo4j_connector.admin:
   path: '/admin/config/neo4j'
   defaults:

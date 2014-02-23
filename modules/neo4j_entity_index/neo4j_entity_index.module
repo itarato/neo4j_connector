@@ -24,14 +24,14 @@ function neo4j_entity_index_neo4j_connector_index_info() {
  * Implement hook_entity_insert().
  */
 function neo4j_entity_index_entity_insert(EntityInterface $entity) {
-  neo4j_connector_index_send_to_index(NEO4J_ENTITY_INDEX_DOMAIN, "{$entity->entityType()}:{$entity->id()}");
+  neo4j_connector_index_mark_for_index(NEO4J_ENTITY_INDEX_DOMAIN, "{$entity->entityType()}:{$entity->id()}");
 }
 
 /**
  * Implement hook_entity_update().
  */
 function neo4j_entity_index_entity_update(EntityInterface $entity) {
-  neo4j_connector_index_send_to_index(NEO4J_ENTITY_INDEX_DOMAIN, "{$entity->entityType()}:{$entity->id()}");
+  neo4j_connector_index_mark_for_index(NEO4J_ENTITY_INDEX_DOMAIN, "{$entity->entityType()}:{$entity->id()}");
 }
 
 /**
@@ -41,26 +41,6 @@ function neo4j_entity_index_entity_delete(EntityInterface $entity) {
   $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . $entity->entityType(), 'entity_id', $entity->id());
   neo4j_connector_get_client()->deleteNode($indexParam);
   neo4j_connector_index_delete(NEO4J_ENTITY_INDEX_DOMAIN, "{$entity->entityType()}:{$entity->id()}");
-}
-
-/**
- * @param $entity_type
- * @param $entity_id
- *
- * @return \Everyman\Neo4j\Node|FALSE
- */
-function neo4j_entity_index_send_to_index_without_fields($entity_type, $entity_id) {
-  $node = neo4j_connector_index_add_node(NEO4J_ENTITY_INDEX_DOMAIN, "$entity_type:$entity_id", FALSE);
-
-  if ($node) {
-    _neo4j_connector_index_mark($entity_type, $entity_id, NEO4J_CONNECTOR_INDEX_STATUS_UPDATE);
-    return $node;
-  }
-  else {
-    watchdog(__FUNCTION__, 'Graph node could not be created. Type: @type id: @id.', array('@type' => $entity_type, '@id' => $entity_id), WATCHDOG_ERROR);
-  }
-
-  return FALSE;
 }
 
 /**
@@ -86,8 +66,12 @@ function neo4j_entity_index_neo4j_connector_properties_alter(array &$properties,
       break;
 
     case 'user':
-      $properties['name'] = $entity->name[0]->getValue()['value'];
+      $properties['title'] = $entity->name[0]->getValue()['value'];
       $properties['mail'] = $entity->mail[0]->getValue()['value'];
+      break;
+
+    case 'taxonomy_term':
+      $properties['title'] = $entity->name->value;
       break;
   }
 
@@ -148,7 +132,7 @@ function neo4j_entity_index_batch_op_mark_for_index($entity_type, $entity_id_key
   $result = $query->execute();
 
   foreach ($result as $entity_id) {
-    neo4j_connector_index_send_to_index('entity', "$entity_type:$entity_id");
+    neo4j_connector_index_mark_for_index('entity', "$entity_type:$entity_id");
     $context['sandbox']['progress']++;
   }
 
@@ -176,6 +160,15 @@ function neo4j_entity_index_neo4j_connector_graph_node_update(\Everyman\Neo4j\No
       $neo4jFieldHandler->processFieldData($entity, $field_instance->field_name);
     }
   }
+
+  if ($entity->entityType() == 'node') {
+    // Connect to author.
+    if ($uid = $entity->uid->value) {
+      $client = neo4j_connector_get_client();
+      $index_param = neo4j_entity_index_get_index_param(NEO4J_ENTITY_INDEX_DOMAIN, "user:$uid");
+      $client->connectOrCreate($graph_node, $index_param, NEO4J_ENTITY_INDEX_DOMAIN, "user:$uid", 'author');
+    }
+  }
 }
 
 /**
@@ -185,4 +178,9 @@ function neo4j_entity_index_neo4j_connector_graph_node_update(\Everyman\Neo4j\No
 function neo4j_entity_index_get_entity_by_index_id($id) {
   list($entity_type, $entity_id) = explode(':', $id);
   return entity_load($entity_type, $entity_id);
+}
+
+function neo4j_entity_index_get_graph_node_for_type_and_id($entity_type, $entity_id) {
+  $index_param = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . $entity_type, 'entity_id', $entity_id);
+  return neo4j_connector_get_client()->getGraphNodeOfIndex($index_param);
 }

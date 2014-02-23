@@ -7,6 +7,8 @@
 namespace Drupal\neo4j_entity_index;
 
 use Drupal\field\Entity\Field;
+use Drupal\neo4j_connector\Neo4JDrupal;
+use Drupal\neo4j_connector\Neo4JDrupalIndexParam;
 use Everyman\Neo4j\Node;
 
 /**
@@ -46,24 +48,8 @@ class Neo4JDrupalReferenceFieldHandler extends Neo4JDrupalAbstractFieldHandler {
    * Implements Neo4JDrupalAbstractFieldHandler::processFieldItem().
    */
   public function processFieldItem($value) {
-    $this->indexParam->value = $value;
-
     $client = neo4j_connector_get_client();
-    $referencedNode = $client->getGraphNodeOfIndex($this->indexParam);
-
-    if (!$referencedNode) {
-      $referencedNode = neo4j_entity_index_send_to_index_without_fields($this->refEntityType, $value);
-    }
-
-    if ($referencedNode) {
-      $this->node->relateTo($referencedNode, $this->fieldInfo->name)->save();
-    }
-    else {
-      watchdog(__CLASS__, 'Unable to connect to reference. Type: @type, id: @id.', array(
-        '@type' => $this->refEntityType,
-        '@id' => $this->indexParam->value,
-      ), WATCHDOG_ERROR);
-    }
+    $client->connectOrCreate($this->node, $this->indexParam, NEO4J_ENTITY_INDEX_DOMAIN, "{$this->refEntityType}:{$value}", $this->fieldInfo->name);
   }
 
 }

@@ -27,7 +27,6 @@ class Neo4JController extends ControllerBase implements ContainerInjectionInterf
     }
 
     $index_info = neo4j_connector_index_info();
-    dpm($index_info);
 
     if (!$index_info) {
       // Exit - no index.

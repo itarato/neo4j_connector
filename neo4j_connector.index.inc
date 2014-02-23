@@ -29,17 +29,17 @@ define('NEO4J_CONNECTOR_INDEX_STATUS_UPDATE',     3);
  * @param $entity_id
  *  Entity ID.
  */
-function neo4j_connector_index_send_to_index($domain, $id) {
+function neo4j_connector_index_mark_for_index($domain, $id) {
   $index_status = neo4j_connector_index_get_index_status($domain, $id);
 
   switch ($index_status) {
     case NEO4J_CONNECTOR_INDEX_STATUS_NOT_EXIST:
-      _neo4j_connector_index_mark($domain, $id, NEO4J_CONNECTOR_INDEX_STATUS_INDEX);
+      neo4j_connector_index_mark_for_index_with_status($domain, $id, NEO4J_CONNECTOR_INDEX_STATUS_INDEX);
       break;
 
     case NEO4J_CONNECTOR_INDEX_STATUS_DELETE:
     case NEO4J_CONNECTOR_INDEX_STATUS_INDEXED:
-      _neo4j_connector_index_mark($domain, $id, NEO4J_CONNECTOR_INDEX_STATUS_UPDATE);
+      neo4j_connector_index_mark_for_index_with_status($domain, $id, NEO4J_CONNECTOR_INDEX_STATUS_UPDATE);
       break;
 
     case NEO4J_CONNECTOR_INDEX_STATUS_INDEX:
@@ -115,7 +115,7 @@ function neo4j_connector_index_delete_all() {
  * @param $index_status
  *  Index status code.
  */
-function _neo4j_connector_index_mark($domain, $id, $index_status) {
+function neo4j_connector_index_mark_for_index_with_status($domain, $id, $index_status) {
   $result = db_query("
     SELECT *
     FROM {neo4j_connector_index}
@@ -259,6 +259,7 @@ function neo4j_connector_index_add_node($domain, $id, $include_relatioships = TR
 function neo4j_connector_index_update_node($domain, $id) {
   list($index_param, $properties, $labels) = neo4j_connector_index_get_node_info_from_index($domain, $id);
   $graph_node = Neo4JDrupal::sharedInstance()->updateNode($properties, $labels, $index_param);
+  \Drupal::moduleHandler()->invokeAll('neo4j_connector_graph_node_update', array($graph_node, $domain, $id));
   return $graph_node;
 }
 
@@ -285,4 +286,19 @@ function neo4j_connector_index_get_node_info_from_index($domain, $id) {
   \Drupal::moduleHandler()->alter('neo4j_connector_labels', $labels, $domain, $id);
 
   return array($index_param, $properties, $labels);
+}
+
+/**
+ * @return \Everyman\Neo4j\Node|FALSE
+ */
+function neo4j_connector_index_add_ghost_node($domain, $id) {
+  $node = neo4j_connector_index_add_node($domain, $id, FALSE);
+
+  if ($node) {
+    neo4j_connector_index_mark_for_index_with_status($domain, $id, NEO4J_CONNECTOR_INDEX_STATUS_UPDATE);
+    return $node;
+  }
+
+  watchdog(__FUNCTION__, 'Graph node could not be created. Type: @domain id: @id.', array('@domain' => $domain, '@id' => $id), WATCHDOG_ERROR);
+  return FALSE;
 }

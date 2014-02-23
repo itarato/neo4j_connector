@@ -6,6 +6,7 @@
 namespace Drupal\neo4j_entity_index;
 
 use Drupal\field\Entity\Field;
+use Drupal\neo4j_connector\Neo4JDrupal;
 use Everyman\Neo4j\Label;
 use Everyman\Neo4j\Node;
 
@@ -45,6 +46,7 @@ class Neo4JDrupalSimpleValueFieldHandler extends Neo4JDrupalAbstractFieldHandler
     $index = $client->getIndex($this->indexName);
     $field_node = $index->findOne('value', $value);
 
+    // @todo handle fields properly with labels and such.
     if (!$field_node) {
       $field_node = $client->client->makeNode(array(
         'value' => $value,
@@ -61,7 +63,10 @@ class Neo4JDrupalSimpleValueFieldHandler extends Neo4JDrupalAbstractFieldHandler
       $client->getIndex($this->indexName)->add($field_node, 'value', $value);
     }
 
-    $this->node->relateTo($field_node, $this->fieldInfo->name)->save();
+    $this->node
+      ->relateTo($field_node, $this->fieldInfo->name)
+      ->setProperty(Neo4JDrupal::OWNER, $this->node->getId())
+      ->save();
   }
 
 }

@@ -1,0 +1,14 @@
+neo4j_entity_index.node_info:
+  route_name: neo4j_entity_index.node_info
+  base_route: node.view
+  title: 'Graph info'
+
+neo4j_entity_index.user_info:
+  route_name: neo4j_entity_index.user_info
+  base_route: user.view
+  title: 'Graph info'
+
+neo4j_entity_index.term_info:
+  route_name: neo4j_entity_index.term_info
+  base_route: taxonomy.term_page
+  title: 'Graph info'

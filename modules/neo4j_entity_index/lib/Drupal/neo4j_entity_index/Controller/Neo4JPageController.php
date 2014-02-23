@@ -6,11 +6,10 @@
  * Time: 9:41 PM
  */
 
-namespace Drupal\neo4j_connector\Controller;
+namespace Drupal\neo4j_entity_index\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Entity\EntityInterface;
-use Drupal\neo4j_connector\Neo4JDrupal;
 
 class Neo4JPageController extends ControllerBase {
 
@@ -55,8 +54,7 @@ class Neo4JPageController extends ControllerBase {
    * @return null|string
    */
   protected function graphInfoPageContent($entity_type, $id) {
-    $client = neo4j_connector_get_client();
-    $graph_node = $client->getGraphNodeOfEntity($entity_type, $id);
+    $graph_node = neo4j_entity_index_get_graph_node_for_type_and_id($entity_type, $id);
 
     if (!$graph_node) {
       return t('Cannot find associated graph node.');

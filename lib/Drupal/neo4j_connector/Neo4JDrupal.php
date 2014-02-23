@@ -47,6 +47,11 @@ class Neo4JDrupal {
   public $queryFactory;
 
   /**
+   * Property name on the relationship that contains the owner graph node's ID.
+   */
+  const OWNER = 'owner-id';
+
+  /**
    * Constructor.
    * Use Neo4JDrupal::sharedInstance() instead.
    */
@@ -226,6 +231,10 @@ class Neo4JDrupal {
 
     $relationships = $graph_node->getRelationships();
     foreach ($relationships as $relationship) {
+      if ($graph_node->getId() != $relationship->getProperty(Neo4JDrupal::OWNER)) {
+        // The relationship does not belong to the graph node. Keep it.
+        continue;
+      }
       $relationship->delete();
     }
 
@@ -245,6 +254,26 @@ class Neo4JDrupal {
       return $this->client->getNode($prop_cont->getId());
     }
     return FALSE;
+  }
+
+  public function connectOrCreate(Node $host_node, Neo4JDrupalIndexParam $guest_index_param, $index_domain, $index_id, $relation_name) {
+    $guest_node = $this->getGraphNodeOfIndex($guest_index_param);
+
+    if (!$guest_node) {
+      $guest_node = neo4j_connector_index_add_ghost_node($index_domain, $index_id);
+    }
+
+    if ($guest_node) {
+      $host_node->relateTo($guest_node, $relation_name)
+        ->setProperty(Neo4JDrupal::OWNER, $host_node->getId())
+        ->save();
+      return $guest_node;
+    }
+
+    watchdog(__CLASS__, 'Unable to connect to reference. Domain: @domain, id: @id.', array(
+      '@domain' => $index_domain,
+      '@id' => $index_id,
+    ), WATCHDOG_WARNING);
   }
 
 }
