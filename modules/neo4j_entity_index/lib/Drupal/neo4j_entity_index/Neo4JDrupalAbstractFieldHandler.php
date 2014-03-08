@@ -9,8 +9,7 @@
 namespace Drupal\neo4j_entity_index;
 
 use Drupal\Core\Entity\EntityInterface;
-use Drupal\Core\Language\Language;
-use Drupal\field\Entity\Field;
+use Drupal\field\Entity\FieldConfig;
 use Everyman\Neo4j\Node;
 
 /**
@@ -28,7 +27,7 @@ abstract class Neo4JDrupalAbstractFieldHandler {
   /**
    * Field info.
    *
-   * @var stdClass
+   * @var FieldConfig
    */
   protected $fieldInfo;
 
@@ -36,10 +35,9 @@ abstract class Neo4JDrupalAbstractFieldHandler {
    * Constructor.
    *
    * @param Node $graph_node
-   * @param $type
-   * @param $reference_name
+   * @param FieldConfig $field_info
    */
-  public function __construct(Node $graph_node, Field $field_info) {
+  public function __construct(Node $graph_node, FieldConfig $field_info) {
     $this->node = $graph_node;
     $this->fieldInfo = $field_info;
   }
@@ -54,7 +52,8 @@ abstract class Neo4JDrupalAbstractFieldHandler {
    */
   public function processFieldData(EntityInterface $entity, $field_name) {
     // @todo properly get languages.
-    $items = $entity->getTranslation(Language::LANGCODE_NOT_SPECIFIED)->get($field_name);
+
+    $items = $entity->{$field_name};
     foreach ($items as $item) {
       if (($value = $item->value)) {
         $this->processFieldItem($item->value);

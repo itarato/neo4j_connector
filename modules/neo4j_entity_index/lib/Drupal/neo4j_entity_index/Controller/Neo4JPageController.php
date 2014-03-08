@@ -66,7 +66,11 @@ class Neo4JPageController extends ControllerBase {
     $info[] = t('Data browser link') . ': ' . l($data_browser_link, $data_browser_link);
     $info[] = '<pre>START n=node:' . NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . $entity_type . '(entity_id="' . $id . '") RETURN n;</pre>';
 
-    return theme('item_list', array('items' => $info));
+    $info = array(
+      '#theme' => 'item_list',
+      '#items' => $info,
+    );
+    return drupal_render($info);
   }
 
 }

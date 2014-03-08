@@ -14,7 +14,7 @@ class Neo4JMarkForIndexForm extends FormBase {
     return 'neo4j_connector_form_mark_for_index';
   }
 
-  public function buildForm(array $form, array &$form_state, array $neo4j_connector_index = NULL) {
+  public function buildForm(array $form, array &$form_state, $neo4j_connector_index = NULL) {
     $form['#title'] = t('Mark all %index for index', array('%index' => $neo4j_connector_index));
 
     $form['index'] = array(

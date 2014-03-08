@@ -45,22 +45,16 @@ class Neo4JController extends ControllerBase implements ContainerInjectionInterf
     $purge_form = \Drupal::formBuilder()->getForm('Drupal\neo4j_connector\Form\Neo4JPurgeDBForm');
     $reindex_form = \Drupal::formBuilder()->getForm('Drupal\neo4j_connector\Form\Neo4JIndexForm');
 
-    $indexes = theme('table', array('rows' => $rows, 'header' => array(t('Index'), NULL)));
+    $indexes = array(
+      '#theme' => 'table',
+      '#rows' => $rows,
+      '#header' => array(t('Index'), NULL),
+    );
 
     return drupal_render($settings_form) .
-      $indexes .
+      drupal_render($indexes) .
       drupal_render($purge_form) .
       drupal_render($reindex_form);
-
-//
-
-//    $mark_for_index_form = \Drupal::formBuilder()->getForm('Drupal\neo4j_connector\Form\Neo4JMarkForIndexForm');
-//
-//
-//    return
-//
-//      drupal_render($mark_for_index_form) .
-//      drupal_render($reindex_form);
   }
 
   public static function create(ContainerInterface $container) {

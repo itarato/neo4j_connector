@@ -10,7 +10,6 @@ use Everyman\Neo4j\Client;
 use Everyman\Neo4j\Index\NodeIndex;
 use Everyman\Neo4j\Label;
 use Everyman\Neo4j\Node;
-use Everyman\Neo4j\Cypher\Query;
 
 /**
  * Class Neo4JDrupal

@@ -5,7 +5,7 @@
 
 namespace Drupal\neo4j_entity_index;
 
-use Drupal\field\Entity\Field;
+use Drupal\field\Entity\FieldConfig;
 use Drupal\neo4j_connector\Neo4JDrupal;
 use Everyman\Neo4j\Label;
 use Everyman\Neo4j\Node;
@@ -33,7 +33,7 @@ class Neo4JDrupalSimpleValueFieldHandler extends Neo4JDrupalAbstractFieldHandler
    * @param $indexName
    *  Name of the index.
    */
-  public function __construct(Node $graph_node, Field $field_info, $indexName) {
+  public function __construct(Node $graph_node, FieldConfig $field_info, $indexName) {
     parent::__construct($graph_node, $field_info);
     $this->indexName = $indexName;
   }

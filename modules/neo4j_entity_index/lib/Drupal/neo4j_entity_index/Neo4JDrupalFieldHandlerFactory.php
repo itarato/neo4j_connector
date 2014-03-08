@@ -5,8 +5,8 @@
 
 namespace Drupal\neo4j_entity_index;
 
+use Drupal\field\Entity\FieldConfig;
 use Everyman\Neo4j\Node;
-use Drupal\field\Entity\Field;
 use Drupal\neo4j_connector\Neo4JDrupalIndexParam;
 
 /**
@@ -26,7 +26,7 @@ class Neo4JDrupalFieldHandlerFactory {
    *  Graph node.
    * @return Neo4JDrupalAbstractFieldHandler|NULL
    */
-  public static function getInstance(Field $field_info, Node $graph_node) {
+  public static function getInstance(FieldConfig $field_info, Node $graph_node) {
     $module_name = $field_info->module;
     switch ($module_name) {
       case 'entity_reference':
