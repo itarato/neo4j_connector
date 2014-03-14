@@ -18,34 +18,6 @@ define('NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX', 'entity_index_');
 define('NEO4J_CONNECTOR_REINDEX_LIMIT', 100);
 
 /**
- * Implements hook_menu().
- */
-function neo4j_connector_menu() {
-  return array(
-    // Neo4J admin section.
-    'admin/config/neo4j' => array(
-      'title' => 'Neo4J',
-      'description' => 'Administration tools.',
-      'route_name' => 'neo4j_connector.admin',
-    ),
-
-    // Regenerate nodes / users.
-    'admin/config/neo4j/settings' => array(
-      'title' => 'Admin settings',
-      'description' => 'Neo4J settings',
-      'route_name' => 'neo4j_connector.settings',
-    ),
-
-    // 'Eval' console.
-    'admin/config/neo4j/console' => array(
-      'title' => 'Console',
-      'description' => 'DB console',
-      'route_name' => 'neo4j_connector.console',
-    ),
-  );
-}
-
-/**
  * Implements hook_menu_link_defaults().
  */
 function neo4j_connector_menu_link_defaults() {
@@ -60,11 +32,19 @@ function neo4j_connector_menu_link_defaults() {
     'menu_name' => 'admin',
   );
 
-  // Regenerate nodes / users.
+  // Global settings.
   $items['neo4j_connector.admin.config.neo4j_connector.general'] = array(
     'link_title' => 'Admin settings',
     'description' => 'Neo4J settings',
     'route_name' => 'neo4j_connector.settings',
+    'parent' => 'neo4j_connector.admin.config.neo4j_connector',
+  );
+
+  // Index.
+  $items['neo4j_connector.admin.config.neo4j_connector.index'] = array(
+    'link_title' => 'Index',
+    'description' => 'Index listing, flush and regeneration.',
+    'route_name' => 'neo4j_connector.index',
     'parent' => 'neo4j_connector.admin.config.neo4j_connector',
   );
 

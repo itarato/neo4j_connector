@@ -18,28 +18,20 @@ class Neo4JIndexForm extends FormBase {
   }
 
   public function buildForm(array $form, array &$form_state) {
-    $form['stat'] = array(
-      '#markup' => t('@indexed / @total are in the database.', array(
-        '@indexed' => Neo4JDrupalIndexStat::getIndexed(),
-        '@total' => Neo4JDrupalIndexStat::getTotal(),
-      )),
-      '#prefix' => '<div>',
-      '#suffix' => '</div>',
-    );
-
     $form['submit'] = array(
       '#type' => 'submit',
       '#value' => t('Index'),
-      // Markup has no nesting. This div makes sure it's the first child and properly aligned.
-      '#prefix' => '<div>',
-      '#suffix' => '</div>',
+    );
+
+    $form['stat'] = array(
+      '#type' => 'item',
+      '#description' => t('@indexed / @total are in the database.', array(
+        '@indexed' => Neo4JDrupalIndexStat::getIndexed(),
+        '@total' => Neo4JDrupalIndexStat::getTotal(),
+      )),
     );
 
     return $form;
-  }
-
-  public function validateForm(array &$form, array &$form_state) {
-
   }
 
   public function submitForm(array &$form, array &$form_state) {

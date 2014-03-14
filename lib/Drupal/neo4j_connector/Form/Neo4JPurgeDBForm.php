@@ -1,15 +1,16 @@
 <?php
 /**
- * Created by PhpStorm.
- * User: itarato
- * Date: 12/26/13
- * Time: 11:30 AM
+ * @file
  */
 
 namespace Drupal\neo4j_connector\Form;
 
 use Drupal\Core\Form\FormBase;
 
+/**
+ * Class Neo4JPurgeDBForm
+ * @package Drupal\neo4j_connector\Form
+ */
 class Neo4JPurgeDBForm extends FormBase {
 
   public function getFormId() {
@@ -22,10 +23,12 @@ class Neo4JPurgeDBForm extends FormBase {
       '#value' => t('Delete all graph data'),
     );
 
-    return $form;
-  }
+    $form['desc'] = array(
+      '#type' => 'item',
+      '#description' => t('Warning - this action will delete all information in the graph database. Cannot be undone.'),
+    );
 
-  public function validateForm(array &$form, array &$form_state) {
+    return $form;
   }
 
   public function submitForm(array &$form, array &$form_state) {
@@ -33,4 +36,4 @@ class Neo4JPurgeDBForm extends FormBase {
     drupal_set_message(t('All relationships and nodes have been deleted.'));
   }
 
-} 
+}

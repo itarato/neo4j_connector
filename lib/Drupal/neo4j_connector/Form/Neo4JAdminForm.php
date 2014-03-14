@@ -5,9 +5,7 @@
 namespace Drupal\neo4j_connector\Form;
 
 use Drupal\Core\Config\ConfigFactory;
-use Drupal\Core\Config\Context\ContextInterface;
 use Drupal\Core\Form\ConfigFormBase;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class Neo4JAdminForm extends ConfigFormBase {
 
@@ -35,9 +33,6 @@ class Neo4JAdminForm extends ConfigFormBase {
     );
 
     return parent::buildForm($form, $form_state);
-  }
-
-  public function validateForm(array &$form, array &$form_state) {
   }
 
   public function submitForm(array &$form, array &$form_state) {

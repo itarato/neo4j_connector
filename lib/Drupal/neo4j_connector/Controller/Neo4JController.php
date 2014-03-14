@@ -26,6 +26,12 @@ class Neo4JController extends ControllerBase implements ContainerInjectionInterf
       drupal_set_message(t('Cannot connect to the Neo4J database. Please, check the connection details.'), 'warning');
     }
 
+    $settings_form = \Drupal::formBuilder()->getForm('Drupal\neo4j_connector\Form\Neo4JAdminForm');
+
+    return drupal_render($settings_form);
+  }
+
+  public function indexSettings() {
     $index_info = neo4j_connector_index_info();
 
     if (!$index_info) {
@@ -38,23 +44,24 @@ class Neo4JController extends ControllerBase implements ContainerInjectionInterf
       $rows[] = array(
         $index['label'],
         l(t('Mark all for index'), 'admin/config/neo4j/settings/index/' . $key . '/mark_for_index'),
+        isset($index['settings path']) ? l(t('settings'), $index['settings path']) : '',
       );
     }
 
-    $settings_form = \Drupal::formBuilder()->getForm('Drupal\neo4j_connector\Form\Neo4JAdminForm');
     $purge_form = \Drupal::formBuilder()->getForm('Drupal\neo4j_connector\Form\Neo4JPurgeDBForm');
     $reindex_form = \Drupal::formBuilder()->getForm('Drupal\neo4j_connector\Form\Neo4JIndexForm');
 
     $indexes = array(
       '#theme' => 'table',
       '#rows' => $rows,
-      '#header' => array(t('Index'), NULL),
+      '#header' => array(t('Index'), NULL, t('Settings')),
     );
 
-    return drupal_render($settings_form) .
-      drupal_render($indexes) .
-      drupal_render($purge_form) .
-      drupal_render($reindex_form);
+    return implode('<br><hr><br>', array(
+      drupal_render($indexes),
+      drupal_render($purge_form),
+      drupal_render($reindex_form),
+    ));
   }
 
   public static function create(ContainerInterface $container) {

@@ -1,0 +1,4 @@
+entity_types:
+  - node
+  - user
+  - taxonomy_term
