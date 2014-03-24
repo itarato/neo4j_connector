@@ -48,6 +48,7 @@ class Neo4JDrupalReferenceFieldHandler extends Neo4JDrupalAbstractFieldHandler {
    */
   public function processFieldItem($value) {
     $client = neo4j_connector_get_client();
+    $this->indexParam->value = $value;
     $client->connectOrCreate($this->node, $this->indexParam, NEO4J_ENTITY_INDEX_DOMAIN, "{$this->refEntityType}:{$value}", $this->fieldInfo->name);
   }
 
