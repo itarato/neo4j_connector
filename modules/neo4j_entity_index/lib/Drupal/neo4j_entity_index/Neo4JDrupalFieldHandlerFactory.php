@@ -30,8 +30,9 @@ class Neo4JDrupalFieldHandlerFactory {
     $module_name = $field_info->module;
     switch ($module_name) {
       case 'entity_reference':
-        $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . 'node', 'entity_id');
-        return new Neo4JDrupalReferenceFieldHandler($graph_node, $field_info, $indexParam, 'node');
+        $target_type = $field_info->settings['target_type'];
+        $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . $target_type, 'entity_id');
+        return new Neo4JDrupalReferenceFieldHandler($graph_node, $field_info, $indexParam, $target_type);
 
       case 'node_reference':
         $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . 'node', 'entity_id');
