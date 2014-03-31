@@ -70,6 +70,11 @@ class Neo4JConsoleForm extends FormBase {
       elseif ($record instanceof \Everyman\Neo4j\Query\Row) {
         $rows[] = $this->extractQueryRow($record);
       }
+      elseif ($record instanceof \Everyman\Neo4j\Path) {
+        foreach ($record->getNodes() as $node) {
+          $rows[] = $node->getProperties();
+        }
+      }
       else {
         $rows[] = $record;
       }

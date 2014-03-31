@@ -55,7 +55,7 @@ class Neo4JDrupalSimpleValueFieldHandler extends Neo4JDrupalAbstractFieldHandler
       $field_node->save();
 
       $labels = array();
-      foreach (array('field', $this->fieldInfo->name) as $label_string) {
+      foreach (array($this->fieldInfo->name) as $label_string) {
         $labels[] = new Label($client->client, $label_string);
       }
       $field_node->addLabels($labels);

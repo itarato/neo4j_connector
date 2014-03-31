@@ -273,6 +273,7 @@ class Neo4JDrupal {
       '@domain' => $index_domain,
       '@id' => $index_id,
     ), WATCHDOG_WARNING);
+    return NULL;
   }
 
 }
