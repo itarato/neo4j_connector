@@ -4,6 +4,6 @@ description: 'Provides access to Neo4J database. Handles entity/field replicatio
 package: Neo4J
 core: 8.x
 dependencies:
-  - composer_manager
+#  - composer_manager
   - entity
 configure: neo4j_connector.settings

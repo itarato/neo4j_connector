@@ -60,10 +60,10 @@ function neo4j_connector_index_mark_for_index($domain, $id) {
 /**
  * Returns the index status of an entity.
  *
- * @param $entity_type
- *  Entity type.
- * @param $entity_id
- *  Entity ID.
+ * @param $domain
+ *  Index domain.
+ * @param $id
+ *  Index ID.
  * @return int
  *  Index status code. Examples:
  *    NEO4J_CONNECTOR_INDEX_STATUS_NOT_EXIST
@@ -85,10 +85,10 @@ function neo4j_connector_index_get_index_status($domain, $id) {
 /**
  * Delete entity from the index. At this point the entity must not have the graph node in the db.
  *
- * @param $entity_type
- *  Entity type.
- * @param $entity_id
- *  Entity ID.
+ * @param $domain
+ *  Index domain.
+ * @param $id
+ * Index id.
  */
 function neo4j_connector_index_delete($domain, $id) {
   db_query("
@@ -108,10 +108,10 @@ function neo4j_connector_index_delete_all() {
 /**
  * Mark entity in the index. Valid statuses are defined as NEO4J_CONNECTOR_INDEX_STATUS_<SUFFIX>.
  *
- * @param $entity_type
- *  Entity type.
- * @param $entity_id
- *  Entity ID.
+ * @param $domain
+ *  Index domain.
+ * @param $id
+ * Index id.
  * @param $index_status
  *  Index status code.
  */
@@ -289,6 +289,10 @@ function neo4j_connector_index_get_node_info_from_index($domain, $id) {
 }
 
 /**
+ * @param $domain
+ *  Index domain.
+ * @param $id
+ *  Index id.
  * @return \Everyman\Neo4j\Node|FALSE
  */
 function neo4j_connector_index_add_ghost_node($domain, $id) {

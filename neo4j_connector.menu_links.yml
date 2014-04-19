@@ -1,0 +1,27 @@
+neo4j_connector.admin:
+  title: 'Neo4J admin'
+  route_name: neo4j_connector.admin
+  parent: system.admin_config
+  weight: -4
+  description: 'Neo4J admin configurations'
+
+neo4j_connector.settings:
+  title: 'Neo4J-connector settings'
+  parent: neo4j_connector.admin
+  route_name: neo4j_connector.settings
+  description: 'General configuration'
+  weight: 0
+
+neo4j_connector.index:
+  title: 'Index'
+  route_name: neo4j_connector.index
+  parent: neo4j_connector.admin
+  description: 'Index management'
+  weight: 1
+
+neo4j_connector.console:
+  title: 'Neo4J Cypher query console'
+  parent: neo4j_connector.admin
+  route_name: neo4j_connector.console
+  description: 'Execute Cypher queries'
+  weight: 2

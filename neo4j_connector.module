@@ -9,6 +9,8 @@ use Drupal\neo4j_connector\Neo4JDrupal;
 use Drupal\neo4j_connector\Neo4JDrupalIndexParam;
 use Drupal\neo4j_connector\Neo4JDrupalIndexStat;
 
+require_once DRUPAL_ROOT . '/sites/all/vendor/autoload.php';
+
 require_once __DIR__ . '/neo4j_connector.index.inc';
 
 // Index names.
@@ -17,47 +19,47 @@ define('NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX', 'entity_index_');
 // Limit of items to process during reindex batch op.
 define('NEO4J_CONNECTOR_REINDEX_LIMIT', 100);
 
-/**
- * Implements hook_menu_link_defaults().
- */
-function neo4j_connector_menu_link_defaults() {
-  $items = array();
-
-  // Neo4J admin section.
-  $items['neo4j_connector.admin.config.neo4j_connector'] = array(
-    'link_title' => 'Neo4J',
-    'description' => 'Administration tools.',
-    'route_name' => 'neo4j_connector.admin',
-    'parent' => 'system.admin.config',
-    'menu_name' => 'admin',
-  );
-
-  // Global settings.
-  $items['neo4j_connector.admin.config.neo4j_connector.general'] = array(
-    'link_title' => 'Admin settings',
-    'description' => 'Neo4J settings',
-    'route_name' => 'neo4j_connector.settings',
-    'parent' => 'neo4j_connector.admin.config.neo4j_connector',
-  );
-
-  // Index.
-  $items['neo4j_connector.admin.config.neo4j_connector.index'] = array(
-    'link_title' => 'Index',
-    'description' => 'Index listing, flush and regeneration.',
-    'route_name' => 'neo4j_connector.index',
-    'parent' => 'neo4j_connector.admin.config.neo4j_connector',
-  );
-
-  // 'Eval' console.
-  $items['neo4j_connector.admin.config.neo4j_connector.console'] = array(
-    'link_title' => 'Console',
-    'description' => 'DB console',
-    'route_name' => 'neo4j_connector.console',
-    'parent' => 'neo4j_connector.admin.config.neo4j_connector',
-  );
-
-  return $items;
-}
+///**
+// * Implements hook_menu_link_defaults().
+// */
+//function neo4j_connector_menu_link_defaults() {
+//  $items = array();
+//
+//  // Neo4J admin section.
+//  $items['neo4j_connector.admin.config.neo4j_connector'] = array(
+//    'link_title' => 'Neo4J',
+//    'description' => 'Administration tools.',
+//    'route_name' => 'neo4j_connector.admin',
+//    'parent' => 'system.admin.config',
+//    'menu_name' => 'admin',
+//  );
+//
+//  // Global settings.
+//  $items['neo4j_connector.admin.config.neo4j_connector.general'] = array(
+//    'link_title' => 'Admin settings',
+//    'description' => 'Neo4J settings',
+//    'route_name' => 'neo4j_connector.settings',
+//    'parent' => 'neo4j_connector.admin.config.neo4j_connector',
+//  );
+//
+//  // Index.
+//  $items['neo4j_connector.admin.config.neo4j_connector.index'] = array(
+//    'link_title' => 'Index',
+//    'description' => 'Index listing, flush and regeneration.',
+//    'route_name' => 'neo4j_connector.index',
+//    'parent' => 'neo4j_connector.admin.config.neo4j_connector',
+//  );
+//
+//  // 'Eval' console.
+//  $items['neo4j_connector.admin.config.neo4j_connector.console'] = array(
+//    'link_title' => 'Console',
+//    'description' => 'DB console',
+//    'route_name' => 'neo4j_connector.console',
+//    'parent' => 'neo4j_connector.admin.config.neo4j_connector',
+//  );
+//
+//  return $items;
+//}
 
 /**
  * Implements hook_admin_paths().
