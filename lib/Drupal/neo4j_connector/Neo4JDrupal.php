@@ -130,13 +130,13 @@ class Neo4JDrupal {
    *  Properties array to store on the graph node.
    * @param $labels
    *  Array of label strings.
-   * @param Neo4JDrupalIndexParam $index_param
+   * @param Neo4JIndexParam $index_param
    *  Index to locate the new node.
    *
    * @return Node
    *  Created graph node object.
    */
-  public function addNode(array $properties, array $labels = array(), Neo4JDrupalIndexParam $index_param = NULL) {
+  public function addNode(array $properties, array $labels = array(), Neo4JIndexParam $index_param = NULL) {
     $graph_node = $this->addGraphNode($properties, $index_param);
 
     // Labels.
@@ -154,11 +154,11 @@ class Neo4JDrupal {
    *
    * @param array $properties
    *  Array of properties.
-   * @param Neo4JDrupalIndexParam $indexParam
+   * @param Neo4JIndexParam $indexParam
    *  Index.
    * @return Node
    */
-  public function addGraphNode(array $properties, Neo4JDrupalIndexParam $indexParam = NULL) {
+  public function addGraphNode(array $properties, Neo4JIndexParam $indexParam = NULL) {
     $node = $this->client->makeNode();
     $node->setProperties($properties);
     $node->save();
@@ -175,10 +175,10 @@ class Neo4JDrupal {
   /**
    * Delete a graph node using the index.
    *
-   * @param Neo4JDrupalIndexParam $indexParam
+   * @param Neo4JIndexParam $indexParam
    *  Index.
    */
-  public function deleteNode(Neo4JDrupalIndexParam $indexParam) {
+  public function deleteNode(Neo4JIndexParam $indexParam) {
     $this->deleteRelationships($indexParam);
 
     if ($graph_node = $this->getGraphNodeOfIndex($indexParam)) {
@@ -191,10 +191,10 @@ class Neo4JDrupal {
   /**
    * Remove all relationships from a graph node.
    *
-   * @param Neo4JDrupalIndexParam $indexParam
+   * @param Neo4JIndexParam $indexParam
    *  Index.
    */
-  public function deleteRelationships(Neo4JDrupalIndexParam $indexParam) {
+  public function deleteRelationships(Neo4JIndexParam $indexParam) {
     if ($node = $this->getGraphNodeOfIndex($indexParam)) {
       $relationships = $node->getRelationships();
       foreach ($relationships as $relationship) {
@@ -210,12 +210,12 @@ class Neo4JDrupal {
    * @param array $properties
    *  Properties to store.
    * @param $labels
-   * @param Neo4JDrupalIndexParam $index_param
+   * @param Neo4JIndexParam $index_param
    *  Index.
    *
    * @return Node
    */
-  public function updateNode(array $properties, array $labels = array(), Neo4JDrupalIndexParam $index_param = NULL) {
+  public function updateNode(array $properties, array $labels = array(), Neo4JIndexParam $index_param = NULL) {
     // @todo possible duplication of AddNode - wrap it
     $graph_node = $this->getGraphNodeOfIndex($index_param);
     $graph_node->setProperties($properties);
@@ -243,11 +243,11 @@ class Neo4JDrupal {
   /**
    * Fetch the graph node identified by the index.
    *
-   * @param Neo4JDrupalIndexParam $index_param
+   * @param Neo4JIndexParam $index_param
    *  Index parameter.
    * @return bool|Node
    */
-  public function getGraphNodeOfIndex(Neo4JDrupalIndexParam $index_param) {
+  public function getGraphNodeOfIndex(Neo4JIndexParam $index_param) {
     $prop_cont = $this->getIndex($index_param->name)->findOne($index_param->key, $index_param->value);
     if ($prop_cont) {
       return $this->client->getNode($prop_cont->getId());
@@ -255,11 +255,12 @@ class Neo4JDrupal {
     return FALSE;
   }
 
-  public function connectOrCreate(Node $host_node, Neo4JDrupalIndexParam $guest_index_param, $index_domain, $index_id, $relation_name) {
+  public function connectOrCreate(Node $host_node, Neo4JIndexParam $guest_index_param, $index_domain, $index_id, $relation_name) {
     $guest_node = $this->getGraphNodeOfIndex($guest_index_param);
 
     if (!$guest_node) {
-      $guest_node = neo4j_connector_index_add_ghost_node($index_domain, $index_id);
+      $indexItem = new IndexItem($index_domain, $index_id);
+      $guest_node = neo4j_connector_index_add_ghost_node($indexItem);
     }
 
     if ($guest_node) {

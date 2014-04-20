@@ -6,7 +6,7 @@
 
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\neo4j_connector\Neo4JDrupal;
-use Drupal\neo4j_connector\Neo4JDrupalIndexParam;
+use Drupal\neo4j_connector\Neo4JIndexParam;
 use Drupal\neo4j_connector\Neo4JDrupalIndexStat;
 
 /**

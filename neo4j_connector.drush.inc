@@ -18,14 +18,6 @@ function neo4j_connector_drush_command() {
     'aliases' => array('neo-purge', 'ncpd'),
   );
 
-  $commands['neo4j-connector-index-statistics'] = array(
-    'description' => 'Get statistics about the index.',
-    'examples' => array(
-      'drush neo-idx-stat' => 'Get the index statistics.',
-    ),
-    'aliases' => array('neo-idx-stat', 'ncis'),
-  );
-
   $commands['neo4j-connector-send-to-index'] = array(
     'description' => 'Send content to the index.',
     'examples' => array(
@@ -53,15 +45,6 @@ function drush_neo4j_connector_purge_db() {
   composer_manager_register_autoloader();
   neo4j_connector_purge_db();
   drush_print('Neo4J database has been purged.');
-}
-
-function drush_neo4j_connector_index_statistics() {
-  $stat = neo4j_connector_index_get_stat();
-
-  drush_print('Index statistics:');
-  foreach ($stat as $name => $value) {
-    drush_print('> ' . $name . ': ' . $value);
-  }
 }
 
 function drush_neo4j_connector_index() {

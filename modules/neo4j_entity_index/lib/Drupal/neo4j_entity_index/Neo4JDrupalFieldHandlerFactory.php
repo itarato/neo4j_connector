@@ -7,7 +7,7 @@ namespace Drupal\neo4j_entity_index;
 
 use Drupal\field\FieldConfigInterface;
 use Everyman\Neo4j\Node;
-use Drupal\neo4j_connector\Neo4JDrupalIndexParam;
+use Drupal\neo4j_connector\Neo4JIndexParam;
 
 /**
  * Class Neo4JDrupalFieldHandlerFactory
@@ -31,15 +31,15 @@ class Neo4JDrupalFieldHandlerFactory {
     switch ($module_name) {
       case 'entity_reference':
         $target_type = $field_info->settings['target_type'];
-        $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . $target_type, 'entity_id');
+        $indexParam = new Neo4JIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . $target_type, 'entity_id');
         return new Neo4JDrupalReferenceFieldHandler($graph_node, $field_info, $indexParam, $target_type);
 
       case 'node_reference':
-        $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . 'node', 'entity_id');
+        $indexParam = new Neo4JIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . 'node', 'entity_id');
         return new Neo4JDrupalReferenceFieldHandler($graph_node, $field_info, $indexParam, 'node');
 
       case 'user_reference':
-        $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . 'user', 'entity_id');
+        $indexParam = new Neo4JIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . 'user', 'entity_id');
         return new Neo4JDrupalReferenceFieldHandler($graph_node, $field_info, $indexParam, 'user');
 
       case 'text':
@@ -49,7 +49,7 @@ class Neo4JDrupalFieldHandlerFactory {
         return new Neo4JDrupalSimpleValueFieldHandler($graph_node, $field_info, 'number_field_index');
 
       case 'taxonomy':
-        $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . 'taxonomy_term', 'entity_id');
+        $indexParam = new Neo4JIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . 'taxonomy_term', 'entity_id');
         return new Neo4JDrupalReferenceFieldHandler($graph_node, $field_info, $indexParam, 'taxonomy_term');
     }
 

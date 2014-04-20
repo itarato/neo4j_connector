@@ -6,8 +6,9 @@
 
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\field\Field;
-use Drupal\neo4j_connector\Neo4JDrupalIndexParam;
+use Drupal\neo4j_connector\Neo4JIndexParam;
 use Drupal\neo4j_entity_index\Neo4JDrupalFieldHandlerFactory;
+use Drupal\neo4j_connector\IndexItem;
 
 // Index domain name.
 define('NEO4J_ENTITY_INDEX_DOMAIN', 'entity');
@@ -34,7 +35,8 @@ function neo4j_entity_index_entity_insert(EntityInterface $entity) {
     return;
   }
 
-  neo4j_connector_index_mark_for_index(NEO4J_ENTITY_INDEX_DOMAIN, "{$entity->getEntityTypeId()}:{$entity->id()}");
+  $index_item = new \Drupal\neo4j_connector\IndexItem(NEO4J_ENTITY_INDEX_DOMAIN, "{$entity->getEntityTypeId()}:{$entity->id()}");
+  neo4j_connector_index_mark_for_index($index_item);
 }
 
 /**
@@ -45,27 +47,30 @@ function neo4j_entity_index_entity_update(EntityInterface $entity) {
     return;
   }
 
-  neo4j_connector_index_mark_for_index(NEO4J_ENTITY_INDEX_DOMAIN, "{$entity->getEntityTypeId()}:{$entity->id()}");
+  $index_item = new \Drupal\neo4j_connector\IndexItem(NEO4J_ENTITY_INDEX_DOMAIN, "{$entity->getEntityTypeId()}:{$entity->id()}");
+  neo4j_connector_index_mark_for_index($index_item);
 }
 
 /**
  * Implement hook_entity_delete().
  */
 function neo4j_entity_index_entity_delete(EntityInterface $entity) {
-  $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . $entity->getEntityTypeId(), 'entity_id', $entity->id());
+  $indexParam = new Neo4JIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . $entity->getEntityTypeId(), 'entity_id', $entity->id());
   neo4j_connector_get_client()->deleteNode($indexParam);
-  neo4j_connector_index_delete(NEO4J_ENTITY_INDEX_DOMAIN, "{$entity->getEntityTypeId()}:{$entity->id()}");
+
+  $indexItem = new \Drupal\neo4j_connector\IndexItem(NEO4J_ENTITY_INDEX_DOMAIN, "{$entity->getEntityTypeId()}:{$entity->id()}");
+  neo4j_connector_index_delete($indexItem);
 }
 
 /**
  * Implements hook_neo4j_connector_properties_alter().
  */
-function neo4j_entity_index_neo4j_connector_properties_alter(array &$properties, $domain, $id) {
-  if ($domain != NEO4J_ENTITY_INDEX_DOMAIN) {
+function neo4j_entity_index_neo4j_connector_properties_alter(array &$properties, IndexItem $indexItem) {
+  if ($indexItem->getDomain() != NEO4J_ENTITY_INDEX_DOMAIN) {
     return;
   }
 
-  $entity = neo4j_entity_index_get_entity_by_index_id($id);
+  $entity = neo4j_entity_index_get_entity_by_index_id($indexItem->getId());
 
   switch ($entity->getEntityTypeId()) {
     case 'node':
@@ -90,12 +95,12 @@ function neo4j_entity_index_neo4j_connector_properties_alter(array &$properties,
 /**
  * Implements hook_neo4j_connector_labels_alter().
  */
-function neo4j_entity_index_neo4j_connector_labels_alter(array &$labels, $domain, $id) {
-  if ($domain != NEO4J_ENTITY_INDEX_DOMAIN) {
+function neo4j_entity_index_neo4j_connector_labels_alter(array &$labels, IndexItem $indexItem) {
+  if ($indexItem->getDomain() != NEO4J_ENTITY_INDEX_DOMAIN) {
     return;
   }
 
-  $entity = neo4j_entity_index_get_entity_by_index_id($id);
+  $entity = neo4j_entity_index_get_entity_by_index_id($indexItem->getId());
 
   $labels[] = $entity->getEntityTypeId();
 }
@@ -156,7 +161,8 @@ function neo4j_entity_index_batch_op_mark_for_index($entity_type, $entity_id_key
   $result = $query->execute();
 
   foreach ($result as $entity_id) {
-    neo4j_connector_index_mark_for_index('entity', "$entity_type:$entity_id");
+    $index_item = new \Drupal\neo4j_connector\IndexItem('entity', "$entity_type:$entity_id");
+    neo4j_connector_index_mark_for_index($index_item);
     $context['sandbox']['progress']++;
   }
 
@@ -172,23 +178,21 @@ function neo4j_entity_index_batch_op_mark_for_index($entity_type, $entity_id_key
 /**
  * Index param resolver callback - creates index param from index domain and ID.
  *
- * @param $domain
- *  Index domain.
- * @param $id
- *  Index ID.
- * @return Neo4JDrupalIndexParam
+ * @param IndexItem $indexItem
+ * @return Neo4JIndexParam
  */
-function neo4j_entity_index_get_index_param($domain, $id) {
-  list($entity_type, $entity_id) = explode(':', $id);
-  return new \Drupal\neo4j_connector\Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . $entity_type, 'entity_id', $entity_id);
+function neo4j_entity_index_get_index_param(IndexItem $indexItem) {
+  list($entity_type, $entity_id) = explode(':', $indexItem->getId());
+  return new \Drupal\neo4j_connector\Neo4JIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . $entity_type, 'entity_id', $entity_id);
 }
 
 /**
  * Implements hook_neo4j_connector_graph_node_update().
  */
-function neo4j_entity_index_neo4j_connector_graph_node_update(\Everyman\Neo4j\Node $graph_node, $domain, $id) {
-  $entity = neo4j_entity_index_get_entity_by_index_id($id);
+function neo4j_entity_index_neo4j_connector_graph_node_update(\Everyman\Neo4j\Node $graph_node, IndexItem $indexItem) {
+  $entity = neo4j_entity_index_get_entity_by_index_id($indexItem->getId());
 
+  // Connect fields.
   $field_instances = Field::fieldInfo()->getBundleInstances($entity->getEntityTypeId(), $entity->bundle());
   foreach ($field_instances as $field_instance) {
     $field_info = Field::fieldInfo()->getField($entity->getEntityTypeId(), $field_instance->field_name);
@@ -201,7 +205,7 @@ function neo4j_entity_index_neo4j_connector_graph_node_update(\Everyman\Neo4j\No
     // Connect to author.
     if ($uid = $entity->uid->value) {
       $client = neo4j_connector_get_client();
-      $index_param = neo4j_entity_index_get_index_param(NEO4J_ENTITY_INDEX_DOMAIN, "user:$uid");
+      $index_param = neo4j_entity_index_get_index_param(new IndexItem(NEO4J_ENTITY_INDEX_DOMAIN, "user:$uid"));
       $client->connectOrCreate($graph_node, $index_param, NEO4J_ENTITY_INDEX_DOMAIN, "user:$uid", 'author');
     }
   }
@@ -229,7 +233,7 @@ function neo4j_entity_index_get_entity_by_index_id($id) {
  * @return bool|\Everyman\Neo4j\Node
  */
 function neo4j_entity_index_get_graph_node_for_type_and_id($entity_type, $entity_id) {
-  $index_param = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . $entity_type, 'entity_id', $entity_id);
+  $index_param = new Neo4JIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . $entity_type, 'entity_id', $entity_id);
   return neo4j_connector_get_client()->getGraphNodeOfIndex($index_param);
 }
 

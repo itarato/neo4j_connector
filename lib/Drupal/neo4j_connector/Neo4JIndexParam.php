@@ -6,10 +6,10 @@
 namespace Drupal\neo4j_connector;
 
 /**
- * Class Neo4JDrupalIndexParam
+ * Class Neo4JIndexParam
  * Defines a unique locator in the graph db. Used to identify Drupal items.
  */
-class Neo4JDrupalIndexParam {
+class Neo4JIndexParam {
 
   /**
    * Name of the index.
