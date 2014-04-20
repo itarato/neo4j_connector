@@ -31,7 +31,7 @@ class Neo4JMarkForIndexForm extends FormBase {
   }
 
   public function submitForm(array &$form, array &$form_state) {
-    $index = neo4j_connector_index_load($form_state['values']['index']);
+    $index = neo4j_connector_index_info_load($form_state['values']['index']);
     $index['index marker callback']();
     $form_state['redirect'] = 'admin/config/neo4j/index';
   }

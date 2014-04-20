@@ -9,6 +9,11 @@ use Drupal\neo4j_connector\Neo4JDrupal;
 use Drupal\neo4j_connector\Neo4JDrupalIndexParam;
 use Drupal\neo4j_connector\Neo4JDrupalIndexStat;
 
+/**
+ * Workaround to load the Neo4J PHP library. I've tried to use composer_manager module, but keeping Drupal8 core
+ * up to date and the module without problems seemed impossible.
+ * @todo fix ugly loading when there is a standard way of handling composer libraries in Drupal 8.
+ */
 require_once DRUPAL_ROOT . '/sites/all/vendor/autoload.php';
 
 require_once __DIR__ . '/neo4j_connector.index.inc';
@@ -19,63 +24,9 @@ define('NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX', 'entity_index_');
 // Limit of items to process during reindex batch op.
 define('NEO4J_CONNECTOR_REINDEX_LIMIT', 100);
 
-///**
-// * Implements hook_menu_link_defaults().
-// */
-//function neo4j_connector_menu_link_defaults() {
-//  $items = array();
-//
-//  // Neo4J admin section.
-//  $items['neo4j_connector.admin.config.neo4j_connector'] = array(
-//    'link_title' => 'Neo4J',
-//    'description' => 'Administration tools.',
-//    'route_name' => 'neo4j_connector.admin',
-//    'parent' => 'system.admin.config',
-//    'menu_name' => 'admin',
-//  );
-//
-//  // Global settings.
-//  $items['neo4j_connector.admin.config.neo4j_connector.general'] = array(
-//    'link_title' => 'Admin settings',
-//    'description' => 'Neo4J settings',
-//    'route_name' => 'neo4j_connector.settings',
-//    'parent' => 'neo4j_connector.admin.config.neo4j_connector',
-//  );
-//
-//  // Index.
-//  $items['neo4j_connector.admin.config.neo4j_connector.index'] = array(
-//    'link_title' => 'Index',
-//    'description' => 'Index listing, flush and regeneration.',
-//    'route_name' => 'neo4j_connector.index',
-//    'parent' => 'neo4j_connector.admin.config.neo4j_connector',
-//  );
-//
-//  // 'Eval' console.
-//  $items['neo4j_connector.admin.config.neo4j_connector.console'] = array(
-//    'link_title' => 'Console',
-//    'description' => 'DB console',
-//    'route_name' => 'neo4j_connector.console',
-//    'parent' => 'neo4j_connector.admin.config.neo4j_connector',
-//  );
-//
-//  return $items;
-//}
-
 /**
- * Implements hook_admin_paths().
- */
-function neo4j_connector_admin_paths() {
-  return array(
-    'admin/config/neo4j/console' => TRUE,
-    'admin/config/neo4j/settings' => TRUE,
-    'admin/config/neo4j' => TRUE,
-    'node/*/graph' => TRUE,
-    'user/*/graph' => TRUE,
-    'taxonomy/term/*/graph' => TRUE,
-  );
-}
-
-/**
+ * Neo4J Drupal service getter shortcut.
+ *
  * @return Neo4JDrupal
  */
 function neo4j_connector_get_client() {
@@ -114,6 +65,10 @@ function neo4j_connector_cron_queue_info() {
   );
 }
 
+/**
+ * Batch callback for indexing.
+ * @see Neo4JIndexForm
+ */
 function _neo4j_connector_batch_op_reindex(&$context) {
   if (empty($context['sandbox'])) {
     $context['sandbox']['total'] = Neo4JDrupalIndexStat::getNotIndexed();
@@ -131,12 +86,12 @@ function _neo4j_connector_batch_op_reindex(&$context) {
  * Implements hook_cron().
  */
 function neo4j_connector_cron() {
-  if (!class_exists('Everyman\Neo4j\Client')) {
-    composer_manager_register_autoloader();
-  }
   neo4j_connector_index_process_index();
 }
 
+/**
+ * Delete all graph data.
+ */
 function neo4j_connector_purge_db() {
   // Delete all relationships.
   Neo4JDrupal::sharedInstance()->query("
@@ -154,12 +109,23 @@ function neo4j_connector_purge_db() {
   neo4j_connector_index_delete_all();
 }
 
-function neo4j_connector_index_load($index) {
+/**
+ * Loads index info for a given index. (Such as the entity index.)
+ *
+ * @param $index_name
+ *  Name of the index.
+ * @return array
+ *
+ * @see neo4j_connector_index_info()
+ */
+function neo4j_connector_index_info_load($index_name) {
   $index_info = neo4j_connector_index_info();
-  return $index_info[$index];
+  return $index_info[$index_name];
 }
 
 /**
+ * Get all index information available.
+ *
  * @return array
  */
 function neo4j_connector_index_info() {

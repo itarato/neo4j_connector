@@ -23,7 +23,7 @@ neo4j_entity_index.term_info:
     _permission: 'access neo4j graph information'
 
 neo4j_entity_index.settings:
-  path: '/admin/config/neo4j_entity_index/settigs'
+  path: '/admin/config/neo4j_entity_index/settings'
   defaults:
     _title: 'Entity index settings'
     _form: '\Drupal\neo4j_entity_index\Form\Neo4JEntityIndexSettingsForm'
