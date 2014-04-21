@@ -1,5 +1,7 @@
 # Neo4J Drupal Connector
 
+_This readme file needs to be updated. Ping me and I'll update it._
+
 The module attempts to connect Drupal with the [Neo4J database](http://www.neo4j.org/). It is a concept module, the end goal is not yet finalized.
 
 # The problem
