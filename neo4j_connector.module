@@ -4,10 +4,9 @@
  * Main module functions.
  */
 
-use Drupal\Core\Entity\EntityInterface;
 use Drupal\neo4j_connector\Neo4JDrupal;
-use Drupal\neo4j_connector\Neo4JIndexParam;
 use Drupal\neo4j_connector\Neo4JDrupalIndexStat;
+use Drupal\neo4j_connector\Index;
 
 /**
  * Workaround to load the Neo4J PHP library. I've tried to use composer_manager module, but keeping Drupal8 core
@@ -15,8 +14,6 @@ use Drupal\neo4j_connector\Neo4JDrupalIndexStat;
  * @todo fix ugly loading when there is a standard way of handling composer libraries in Drupal 8.
  */
 require_once DRUPAL_ROOT . '/sites/all/vendor/autoload.php';
-
-require_once __DIR__ . '/neo4j_connector.index.inc';
 
 // Index names.
 define('NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX', 'entity_index_');
@@ -31,6 +28,13 @@ define('NEO4J_CONNECTOR_REINDEX_LIMIT', 100);
  */
 function neo4j_connector_get_client() {
   return \Drupal::service('neo4j_connector');
+}
+
+/**
+ * @return Index
+ */
+function neo4j_connector_get_index() {
+  return \Drupal::service('neo4j_connector.index');
 }
 
 /**
@@ -74,7 +78,7 @@ function _neo4j_connector_batch_op_reindex(&$context) {
     $context['sandbox']['total'] = Neo4JDrupalIndexStat::getNotIndexed();
   }
 
-  neo4j_connector_index_process_index();
+  neo4j_connector_get_index()->processIndex();
 
   $not_indexed_count = Neo4JDrupalIndexStat::getNotIndexed();
   $context['message'] = t('@count item(s) left.', array('@count' => $not_indexed_count));
@@ -86,7 +90,7 @@ function _neo4j_connector_batch_op_reindex(&$context) {
  * Implements hook_cron().
  */
 function neo4j_connector_cron() {
-  neo4j_connector_index_process_index();
+  neo4j_connector_get_index()->processIndex();
 }
 
 /**
@@ -106,7 +110,7 @@ function neo4j_connector_purge_db() {
     DELETE n
   ");
 
-  neo4j_connector_index_delete_all();
+  neo4j_connector_get_index()->deleteAll();
 }
 
 /**

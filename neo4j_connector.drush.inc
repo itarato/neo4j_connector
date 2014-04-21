@@ -42,18 +42,16 @@ function neo4j_connector_drush_command() {
 }
 
 function drush_neo4j_connector_purge_db() {
-  composer_manager_register_autoloader();
   neo4j_connector_purge_db();
   drush_print('Neo4J database has been purged.');
 }
 
 function drush_neo4j_connector_index() {
   $limit = drush_get_option('limit', NULL);
-  composer_manager_register_autoloader();
-  neo4j_connector_index_process_index($limit);
+  neo4j_connector_get_index()->processIndex($limit);
 }
 
 function drush_neo4j_connector_send_to_index() {
-  neo4j_connector_send_content_to_index();
+  // @todo add real batch op
   drush_backend_batch_process();
 }
