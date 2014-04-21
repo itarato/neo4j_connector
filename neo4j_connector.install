@@ -40,11 +40,6 @@ function neo4j_connector_schema() {
           'default' => 0,
           'description' => 'Timestamp of last update of this index record.',
         ),
-        'remote_id' => array(
-          'type' => 'int',
-          'unsigned' => TRUE,
-          'description' => 'Graph node ID from Neo4J db.',
-        ),
       ),
       'primary key' => array('domain', 'id'),
       'indexes' => array(

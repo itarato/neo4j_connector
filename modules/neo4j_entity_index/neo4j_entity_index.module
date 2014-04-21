@@ -36,7 +36,7 @@ function neo4j_entity_index_entity_insert(EntityInterface $entity) {
   }
 
   $index_item = new \Drupal\neo4j_connector\IndexItem(NEO4J_ENTITY_INDEX_DOMAIN, "{$entity->getEntityTypeId()}:{$entity->id()}");
-  neo4j_connector_get_index()->markForIndex($index_item);
+  neo4j_connector_get_index()->mark($index_item);
 }
 
 /**
@@ -48,7 +48,7 @@ function neo4j_entity_index_entity_update(EntityInterface $entity) {
   }
 
   $index_item = new \Drupal\neo4j_connector\IndexItem(NEO4J_ENTITY_INDEX_DOMAIN, "{$entity->getEntityTypeId()}:{$entity->id()}");
-  neo4j_connector_get_index()->markForIndex($index_item);
+  neo4j_connector_get_index()->mark($index_item);
 }
 
 /**
@@ -162,7 +162,7 @@ function neo4j_entity_index_batch_op_mark_for_index($entity_type, $entity_id_key
 
   foreach ($result as $entity_id) {
     $index_item = new \Drupal\neo4j_connector\IndexItem('entity', "$entity_type:$entity_id");
-    neo4j_connector_get_index()->markForIndex($index_item);
+    neo4j_connector_get_index()->mark($index_item);
     $context['sandbox']['progress']++;
   }
 

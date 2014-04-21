@@ -26,26 +26,28 @@ class Index {
   // Item is marked for update. Will be updated on the next CRON or manual call.
   const STATUS_UPDATE = 3;
 
+  // Argument flags for self::addNode().
   const INCLUDE_RELATIONSHIP = TRUE;
   const DO_NOT_INCLUDE_RELATIONSHIP = FALSE;
 
-
   /**
-   * Mark entity for indexing to Neo4J.
+   * Mark entity for indexing to Neo4J. Calculates index status automatically:
+   *  none -> index
+   *  index|delete -> update
    *
    * @param IndexItem $indexItem
    */
-  public function markForIndex(IndexItem $indexItem) {
+  public function mark(IndexItem $indexItem) {
     $index_status = $this->getStatus($indexItem);
 
     switch ($index_status) {
       case self::STATUS_NOT_EXIST:
-        $this->markForIndexWithStatus($indexItem, self::STATUS_INDEX);
+        $this->markWithStatus($indexItem, self::STATUS_INDEX);
         break;
 
       case self::STATUS_DELETE:
       case self::STATUS_INDEXED:
-        $this->markForIndexWithStatus($indexItem, self::STATUS_UPDATE);
+        $this->markWithStatus($indexItem, self::STATUS_UPDATE);
         break;
 
       case self::STATUS_INDEX:
@@ -54,7 +56,7 @@ class Index {
         break;
 
       default:
-        watchdog(__FUNCTION__, 'Unexpected index status @status for: @index', array(
+        watchdog(__METHOD__, 'Unexpected index status @status for: @index', array(
           '@status' => $index_status,
           '@index' => $indexItem,
         ), WATCHDOG_ERROR);
@@ -62,6 +64,40 @@ class Index {
     }
   }
 
+  /**
+   * Mark entity in the index. Valid statuses are defined as self::STATUS_<SUFFIX>.
+   *
+   * @param IndexItem $indexItem
+   * @param $index_status
+   *  Index status code.
+   */
+  public function markWithStatus(IndexItem $indexItem, $index_status) {
+    $result = db_query("
+      SELECT *
+      FROM {neo4j_connector_index}
+      WHERE domain = :domain AND id = :id
+    ", array(':domain' => $indexItem->getDomain(), ':id' => $indexItem->getId()))->fetchObject();
+
+    $index_item_record = NULL;
+    if (!$result) {
+      $index_item_record = new \stdClass();
+      $index_item_record->domain = $indexItem->getDomain();
+      $index_item_record->id = $indexItem->getId();
+    }
+    else {
+      $index_item_record = $result;
+    }
+
+    $index_item_record->changed = $_SERVER['REQUEST_TIME'];
+    $index_item_record->status = $index_status;
+
+    if (!$result) {
+      drupal_write_record('neo4j_connector_index', $index_item_record);
+    }
+    else {
+      drupal_write_record('neo4j_connector_index', $index_item_record, array('domain', 'id'));
+    }
+  }
 
   /**
    * Returns the index status of an entity.
@@ -75,7 +111,7 @@ class Index {
    *    STATUS_DELETE
    *    STATUS_UPDATE
    */
-  public function getStatus(IndexItem $indexItem) {
+  protected function getStatus(IndexItem $indexItem) {
     $result = db_query("
       SELECT status
       FROM {neo4j_connector_index}
@@ -104,44 +140,8 @@ class Index {
    */
   public function deleteAll() {
     db_query("DELETE FROM {neo4j_connector_index}");
-    watchdog(__FUNCTION__, 'Index has been purged.', array(), WATCHDOG_INFO);
+    watchdog(__METHOD__, 'Index has been purged.', array(), WATCHDOG_INFO);
   }
-
-  /**
-   * Mark entity in the index. Valid statuses are defined as self::STATUS_<SUFFIX>.
-   *
-   * @param IndexItem $indexItem
-   * @param $index_status
-   *  Index status code.
-   */
-  public function markForIndexWithStatus(IndexItem $indexItem, $index_status) {
-    $result = db_query("
-      SELECT *
-      FROM {neo4j_connector_index}
-      WHERE domain = :domain AND id = :id
-    ", array(':domain' => $indexItem->getDomain(), ':id' => $indexItem->getId()))->fetchObject();
-
-    $index_item_record = NULL;
-    if (!$result) {
-      $index_item_record = new \stdClass();
-      $index_item_record->domain = $indexItem->getDomain();
-      $index_item_record->id = $indexItem->getId();
-    }
-    else {
-      $index_item_record = $result;
-    }
-
-    $index_item_record->changed = $_SERVER['REQUEST_TIME'];
-    $index_item_record->status = $index_status;
-
-    if (!$result) {
-      drupal_write_record('neo4j_connector_index', $index_item_record);
-    }
-    else {
-      drupal_write_record('neo4j_connector_index', $index_item_record, array('domain', 'id'));
-    }
-  }
-
 
   /**
    * Processing elements from the index table: indexing or deleting.
@@ -184,19 +184,15 @@ class Index {
           break;
 
         default:
-          watchdog(__FUNCTION__, 'Unexpected index status @status for entity: @entity_type-@entity_id', array(
+          watchdog(__METHOD__, 'Unexpected index status @status for index: @index', array(
             '@status' => $status,
-            '@domain' => $record->domain,
-            '@id' => $record->id,
+            '@index' => $indexItem,
           ), WATCHDOG_ERROR);
           break;
       }
 
       if (isset($graph_node)) {
-        $record->remote_id = $graph_node->getId();
-        $record->status = self::STATUS_INDEXED;
-        $record->changed = $_SERVER['REQUEST_TIME'];
-        drupal_write_record('neo4j_connector_index', $record, array('domain', 'id'));
+        $this->markWithStatus($indexItem, self::STATUS_INDEXED);
       }
     }
   }
@@ -210,6 +206,22 @@ class Index {
     }
 
     return $graph_node;
+  }
+
+  /**
+   * @param IndexItem $indexItem
+   * @return \Everyman\Neo4j\Node|FALSE
+   */
+  public function addGhostNode(IndexItem $indexItem) {
+    $node = $this->addNode($indexItem, self::DO_NOT_INCLUDE_RELATIONSHIP);
+
+    if ($node) {
+      $this->markWithStatus($indexItem, self::STATUS_UPDATE);
+      return $node;
+    }
+
+    watchdog(__METHOD__, 'Graph node could not be created. Index: @index', array('@index' => $indexItem->getDomain()), WATCHDOG_ERROR);
+    return FALSE;
   }
 
   public function updateNode(IndexItem $indexItem) {
@@ -241,22 +253,6 @@ class Index {
     \Drupal::moduleHandler()->alter('neo4j_connector_labels', $labels, $indexItem);
 
     return array($index_param, $properties, $labels);
-  }
-
-  /**
-   * @param IndexItem $indexItem
-   * @return \Everyman\Neo4j\Node|FALSE
-   */
-  public function addGhostNode(IndexItem $indexItem) {
-    $node = $this->addNode($indexItem, self::DO_NOT_INCLUDE_RELATIONSHIP);
-
-    if ($node) {
-      $this->markForIndexWithStatus($indexItem, self::STATUS_UPDATE);
-      return $node;
-    }
-
-    watchdog(__FUNCTION__, 'Graph node could not be created. Index: @index', array('@index' => $indexItem->getDomain()), WATCHDOG_ERROR);
-    return FALSE;
   }
 
 }
