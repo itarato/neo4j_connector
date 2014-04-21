@@ -172,11 +172,11 @@ class Index {
 
       switch ($status) {
         case self::STATUS_INDEX:
-          $graph_node = $this->addNode($indexItem);
+          $this->addNode($indexItem);
           break;
 
         case self::STATUS_UPDATE:
-          $graph_node = $this->updateNode($indexItem);
+          $this->updateNode($indexItem);
           break;
 
         case self::STATUS_DELETE:
@@ -190,10 +190,6 @@ class Index {
           ), WATCHDOG_ERROR);
           break;
       }
-
-      if (isset($graph_node)) {
-        $this->markWithStatus($indexItem, self::STATUS_INDEXED);
-      }
     }
   }
 
@@ -201,33 +197,29 @@ class Index {
     list($index_param, $properties, $labels) = $this->getNodeInfo($indexItem);
     $graph_node = Neo4JDrupal::sharedInstance()->addNode($properties, $labels, $index_param);
 
+    if (!$graph_node) {
+      watchdog(__METHOD__, 'Graph node could not be created. Index: @index', array('@index' => $indexItem->getDomain()), WATCHDOG_ERROR);
+      return FALSE;
+    }
+
     if ($include_relationships) {
       \Drupal::moduleHandler()->invokeAll('neo4j_connector_graph_node_update', array($graph_node, $indexItem));
+      $this->markWithStatus($indexItem, self::STATUS_INDEXED);
+    }
+    else {
+      $this->markWithStatus($indexItem, self::STATUS_UPDATE);
     }
 
     return $graph_node;
-  }
-
-  /**
-   * @param IndexItem $indexItem
-   * @return \Everyman\Neo4j\Node|FALSE
-   */
-  public function addGhostNode(IndexItem $indexItem) {
-    $node = $this->addNode($indexItem, self::DO_NOT_INCLUDE_RELATIONSHIP);
-
-    if ($node) {
-      $this->markWithStatus($indexItem, self::STATUS_UPDATE);
-      return $node;
-    }
-
-    watchdog(__METHOD__, 'Graph node could not be created. Index: @index', array('@index' => $indexItem->getDomain()), WATCHDOG_ERROR);
-    return FALSE;
   }
 
   public function updateNode(IndexItem $indexItem) {
     list($index_param, $properties, $labels) = $this->getNodeInfo($indexItem);
     $graph_node = Neo4JDrupal::sharedInstance()->updateNode($properties, $labels, $index_param);
     \Drupal::moduleHandler()->invokeAll('neo4j_connector_graph_node_update', array($graph_node, $indexItem));
+
+    $this->markWithStatus($indexItem, self::STATUS_INDEXED);
+
     return $graph_node;
   }
 

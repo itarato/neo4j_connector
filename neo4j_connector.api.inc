@@ -4,19 +4,22 @@
  * Hooks and API function.
  */
 
+use Drupal\neo4j_connector\IndexItem;
+
 /**
- * Chance to add properties to a graph node.
- *
- * @param $property
- *  Existing property array to populate.
- * @param $entity
- *  Entity object.
- * @param $entity_type
- *  Type of the entity.
+ * Implements hook_neo4j_connector_properties_alter().
  */
-function hook_neo4j_connector_entity_properties_alter(&$property, $entity, $entity_type) {
-  // Example code:
-  if ($entity_type == 'my_entity') {
-    $property['foo'] = $entity->bar;
-  }
+function hook_neo4j_connector_properties_alter(array &$properties, IndexItem $indexItem) {
+}
+
+/**
+ * Implements hook_neo4j_connector_labels_alter().
+ */
+function hook_neo4j_connector_labels_alter(array &$labels, IndexItem $indexItem) {
+}
+
+/**
+ * Implements hook_neo4j_connector_graph_node_update().
+ */
+function hook_neo4j_connector_graph_node_update(\Everyman\Neo4j\Node $graph_node, IndexItem $indexItem) {
 }

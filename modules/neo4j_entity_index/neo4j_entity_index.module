@@ -35,8 +35,12 @@ function neo4j_entity_index_entity_insert(EntityInterface $entity) {
     return;
   }
 
-  $index_item = new \Drupal\neo4j_connector\IndexItem(NEO4J_ENTITY_INDEX_DOMAIN, "{$entity->getEntityTypeId()}:{$entity->id()}");
-  neo4j_connector_get_index()->mark($index_item);
+  $indexItem = new \Drupal\neo4j_connector\IndexItem(NEO4J_ENTITY_INDEX_DOMAIN, "{$entity->getEntityTypeId()}:{$entity->id()}");
+  neo4j_connector_get_index()->mark($indexItem);
+
+  if (\Drupal::config('neo4j_connector.site')->get('index_immediately')) {
+    neo4j_connector_get_index()->addNode($indexItem);
+  }
 }
 
 /**
@@ -47,8 +51,12 @@ function neo4j_entity_index_entity_update(EntityInterface $entity) {
     return;
   }
 
-  $index_item = new \Drupal\neo4j_connector\IndexItem(NEO4J_ENTITY_INDEX_DOMAIN, "{$entity->getEntityTypeId()}:{$entity->id()}");
-  neo4j_connector_get_index()->mark($index_item);
+  $indexItem = new \Drupal\neo4j_connector\IndexItem(NEO4J_ENTITY_INDEX_DOMAIN, "{$entity->getEntityTypeId()}:{$entity->id()}");
+  neo4j_connector_get_index()->mark($indexItem);
+
+  if (\Drupal::config('neo4j_connector.site')->get('index_immediately')) {
+    neo4j_connector_get_index()->updateNode($indexItem);
+  }
 }
 
 /**
@@ -60,6 +68,10 @@ function neo4j_entity_index_entity_delete(EntityInterface $entity) {
 
   $indexItem = new \Drupal\neo4j_connector\IndexItem(NEO4J_ENTITY_INDEX_DOMAIN, "{$entity->getEntityTypeId()}:{$entity->id()}");
   neo4j_connector_get_index()->delete($indexItem);
+
+  if (\Drupal::config('neo4j_connector.site')->get('index_immediately')) {
+    neo4j_connector_get_index()->deleteNode($indexItem);
+  }
 }
 
 /**

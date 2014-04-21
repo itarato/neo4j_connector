@@ -260,7 +260,7 @@ class Neo4JDrupal {
 
     if (!$guest_node) {
       $indexItem = new IndexItem($index_domain, $index_id);
-      $guest_node = neo4j_connector_get_index()->addGhostNode($indexItem);
+      $guest_node = neo4j_connector_get_index()->addNode($indexItem, Index::DO_NOT_INCLUDE_RELATIONSHIP);
     }
 
     if ($guest_node) {
