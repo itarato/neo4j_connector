@@ -13,7 +13,7 @@ use Drupal\neo4j_connector\Index;
  * up to date and the module without problems seemed impossible.
  * @todo fix ugly loading when there is a standard way of handling composer libraries in Drupal 8.
  */
-require_once DRUPAL_ROOT . '/sites/all/vendor/autoload.php';
+require_once __DIR__ . '/vendor/autoload.php';
 
 // Index names.
 define('NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX', 'entity_index_');
