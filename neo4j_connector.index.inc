@@ -176,7 +176,7 @@ function neo4j_connector_index_process_index($limit = NULL) {
 
       case NEO4J_CONNECTOR_INDEX_STATUS_DELETE:
         $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . $record->entity_type, 'entity_id', $record->entity_id);
-        Neo4JDrupal::sharedInstance()->deleteEntity($record->entity_type, $record->entity_id);
+        Neo4JDrupal::sharedInstance()->deleteEntity($indexParam);
 
         neo4j_connector_index_delete($record->entity_type, $record->entity_id);
         break;

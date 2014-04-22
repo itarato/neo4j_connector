@@ -97,7 +97,7 @@ function neo4j_connector_entity_delete($entity, $type) {
   list ($id,,) = entity_extract_ids($type, $entity);
 
   $indexParam = new Neo4JDrupalIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . $type, 'entity_id', $id);
-  Neo4JDrupal::sharedInstance()->deleteEntity($type, $id);
+  Neo4JDrupal::sharedInstance()->deleteEntity($indexParam);
 
   neo4j_connector_index_delete($type, $id);
 }
