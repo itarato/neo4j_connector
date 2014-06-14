@@ -36,7 +36,7 @@ class Neo4JEntityIndexSettingsForm extends ConfigFormBase {
    *   The form structure.
    */
   public function buildForm(array $form, array &$form_state) {
-    $settings = $this->configFactory->get('neo4j_entity_index.global');
+    $settings = $this->config('neo4j_entity_index.global');
 
     $entity_types = \Drupal::entityManager()->getDefinitions();
 
@@ -71,7 +71,7 @@ class Neo4JEntityIndexSettingsForm extends ConfigFormBase {
    *   An associative array containing the current state of the form.
    */
   public function submitForm(array &$form, array &$form_state) {
-    $this->configFactory->get('neo4j_entity_index.global')
+    $this->config('neo4j_entity_index.global')
       ->set('entity_types', $form_state['values']['entity_types'])
       ->save();
 

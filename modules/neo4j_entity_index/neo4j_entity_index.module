@@ -5,7 +5,7 @@
  */
 
 use Drupal\Core\Entity\EntityInterface;
-use Drupal\field\Field;
+use Drupal\Core\Entity\EntityManager;
 use Drupal\neo4j_connector\Neo4JIndexParam;
 use Drupal\neo4j_entity_index\Neo4JDrupalFieldHandlerFactory;
 use Drupal\neo4j_connector\IndexItem;
@@ -205,11 +205,11 @@ function neo4j_entity_index_neo4j_connector_graph_node_update(\Everyman\Neo4j\No
   $entity = neo4j_entity_index_get_entity_by_index_id($indexItem->getId());
 
   // Connect fields.
-  $field_instances = Field::fieldInfo()->getBundleInstances($entity->getEntityTypeId(), $entity->bundle());
-  foreach ($field_instances as $field_instance) {
-    $field_info = Field::fieldInfo()->getField($entity->getEntityTypeId(), $field_instance->field_name);
-    if ($neo4jFieldHandler = Neo4JDrupalFieldHandlerFactory::getInstance($field_info, $graph_node)) {
-      $neo4jFieldHandler->processFieldData($entity, $field_instance->field_name);
+  $field_instances = \Drupal::entityManager()->getFieldDefinitions($entity->getEntityTypeId(), $entity->bundle());
+  foreach ($field_instances as $field_machine_name => $field_instance) {
+    $field_info = \Drupal\field\Entity\FieldConfig::loadByName($entity->getEntityTypeId(), $field_machine_name);
+    if ($field_info && $neo4jFieldHandler = Neo4JDrupalFieldHandlerFactory::getInstance($field_info, $graph_node)) {
+      $neo4jFieldHandler->processFieldData($entity, $field_machine_name);
     }
   }
 
