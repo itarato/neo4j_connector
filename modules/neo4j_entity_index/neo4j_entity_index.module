@@ -5,7 +5,6 @@
  */
 
 use Drupal\Core\Entity\EntityInterface;
-use Drupal\Core\Entity\EntityManager;
 use Drupal\neo4j_connector\Neo4JIndexParam;
 use Drupal\neo4j_entity_index\Neo4JDrupalFieldHandlerFactory;
 use Drupal\neo4j_connector\IndexItem;
@@ -72,49 +71,6 @@ function neo4j_entity_index_entity_delete(EntityInterface $entity) {
   if (\Drupal::config('neo4j_connector.site')->get('index_immediately')) {
     neo4j_connector_get_index()->deleteNode($indexItem);
   }
-}
-
-/**
- * Implements hook_neo4j_connector_properties_alter().
- */
-function neo4j_entity_index_neo4j_connector_properties_alter(array &$properties, IndexItem $indexItem) {
-  if ($indexItem->getDomain() != NEO4J_ENTITY_INDEX_DOMAIN) {
-    return;
-  }
-
-  $entity = neo4j_entity_index_get_entity_by_index_id($indexItem->getId());
-
-  switch ($entity->getEntityTypeId()) {
-    case 'node':
-      $properties['title'] = $entity->title[0]->getValue()['value'];
-      break;
-
-    case 'user':
-      $properties['title'] = $entity->name[0]->getValue()['value'];
-      $properties['mail'] = $entity->mail[0]->getValue()['value'];
-      break;
-
-    case 'taxonomy_term':
-      $properties['title'] = $entity->name->value;
-      break;
-  }
-
-  $properties['entity_id'] = $entity->id();
-  $properties['entity_type'] = $entity->getEntityTypeId();
-  $properties['entity_bundle'] = $entity->bundle();
-}
-
-/**
- * Implements hook_neo4j_connector_labels_alter().
- */
-function neo4j_entity_index_neo4j_connector_labels_alter(array &$labels, IndexItem $indexItem) {
-  if ($indexItem->getDomain() != NEO4J_ENTITY_INDEX_DOMAIN) {
-    return;
-  }
-
-  $entity = neo4j_entity_index_get_entity_by_index_id($indexItem->getId());
-
-  $labels[] = $entity->getEntityTypeId();
 }
 
 /**

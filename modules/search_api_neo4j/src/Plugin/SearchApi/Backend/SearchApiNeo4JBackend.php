@@ -118,7 +118,7 @@ class SearchApiNeo4JBackend extends BackendPluginBase {
     return $results;
   }
 
-  public function getNodeInfo(\Drupal\search_api\Item\ItemInterface $item) {
+  protected function getNodeInfo(\Drupal\search_api\Item\ItemInterface $item) {
     $properties = array();
     \Drupal::moduleHandler()->alter('neo4j_connector_properties', $properties, $item);
 
