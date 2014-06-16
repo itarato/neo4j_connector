@@ -5,4 +5,5 @@ package: Neo4J
 core: 8.x
 dependencies:
   - entity
+  - search_api
 configure: neo4j_connector.settings

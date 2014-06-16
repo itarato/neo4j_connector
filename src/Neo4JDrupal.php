@@ -180,8 +180,6 @@ class Neo4JDrupal {
   /**
    * Delete a graph node using the index.
    *
-   * @param Neo4JIndexParam $indexParam
-   *  Index.
    */
   public function deleteNode(Node $graph_node, $index_machine_name = NULL) {
     $this->deleteRelationships($graph_node);

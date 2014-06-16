@@ -252,10 +252,4 @@ class Index {
     return array($index_param, $properties, $labels);
   }
 
-  public function index(\Drupal\search_api\Item\ItemInterface $item) {
-    // Delete old.
-
-    // Index.
-  }
-
 }

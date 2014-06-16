@@ -6,7 +6,7 @@
  * Time: 12:47 AM
  */
 
-namespace Drupal\neo4j_entity_index;
+namespace Drupal\search_api_neo4j;
 
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\field\Entity\FieldConfig;

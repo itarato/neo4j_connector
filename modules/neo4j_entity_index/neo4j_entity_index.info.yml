@@ -1,7 +1,0 @@
-name: 'Neo4J Entity Index'
-type: module
-description: 'Makes entities indexable for Neo4J'
-package: Neo4J
-core: 8.x
-dependencies:
-  - neo4j_connector

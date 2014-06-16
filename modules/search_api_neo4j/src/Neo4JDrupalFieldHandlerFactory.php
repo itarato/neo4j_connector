@@ -3,7 +3,7 @@
  * @file
  */
 
-namespace Drupal\neo4j_entity_index;
+namespace Drupal\search_api_neo4j;
 
 use Drupal\field\FieldConfigInterface;
 use Everyman\Neo4j\Node;

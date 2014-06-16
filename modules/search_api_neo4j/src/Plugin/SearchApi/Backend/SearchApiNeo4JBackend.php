@@ -51,12 +51,12 @@ class SearchApiNeo4JBackend extends BackendPluginBase {
       if ($graph_node) {
         list($properties, $labels) = $this->getNodeInfo($item);
         $client->updateNode($properties, $labels, $graph_node);
-        \Drupal::moduleHandler()->invokeAll('neo4j_connector_graph_node_update', array($graph_node, $item));
       }
       else {
         list($properties, $labels) = $this->getNodeInfo($item);
         $index_param = new Neo4JIndexParam($index->machine_name, $client::DEFAULT_INDEX_KEY, $item_key);
-        $client->addNode($properties, $labels, $index_param);
+        $graph_node = $client->addNode($properties, $labels, $index_param);
+        \Drupal::moduleHandler()->invokeAll('neo4j_connector_graph_node_update', array($graph_node, $item));
       }
       $indexed_keys[] = $item_key;
     }
@@ -95,6 +95,7 @@ class SearchApiNeo4JBackend extends BackendPluginBase {
    *   If an error occurred while trying to delete the items.
    */
   public function deleteAllIndexItems(\Drupal\search_api\Index\IndexInterface $index) {
+    // @todo Don't delete everything, only what belongs to this index.
     neo4j_connector_purge_db();
   }
 

@@ -6,7 +6,6 @@
 
 use Drupal\neo4j_connector\Neo4JDrupal;
 use Drupal\neo4j_connector\Neo4JDrupalIndexStat;
-use Drupal\neo4j_connector\Index;
 
 /**
  * Workaround to load the Neo4J PHP library. I've tried to use composer_manager module, but keeping Drupal8 core
@@ -15,12 +14,6 @@ use Drupal\neo4j_connector\Index;
  */
 require_once __DIR__ . '/vendor/autoload.php';
 
-// Index names.
-define('NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX', 'entity_index_');
-
-// Limit of items to process during reindex batch op.
-define('NEO4J_CONNECTOR_REINDEX_LIMIT', 100);
-
 /**
  * Neo4J Drupal service getter shortcut.
  *
@@ -28,13 +21,6 @@ define('NEO4J_CONNECTOR_REINDEX_LIMIT', 100);
  */
 function neo4j_connector_get_client() {
   return \Drupal::service('neo4j_connector');
-}
-
-/**
- * @return Index
- */
-function neo4j_connector_get_index() {
-  return \Drupal::service('neo4j_connector.index');
 }
 
 /**
@@ -70,30 +56,6 @@ function neo4j_connector_cron_queue_info() {
 }
 
 /**
- * Batch callback for indexing.
- * @see Neo4JIndexForm
- */
-function _neo4j_connector_batch_op_reindex(&$context) {
-  if (empty($context['sandbox'])) {
-    $context['sandbox']['total'] = Neo4JDrupalIndexStat::getNotIndexed();
-  }
-
-  neo4j_connector_get_index()->processIndex();
-
-  $not_indexed_count = Neo4JDrupalIndexStat::getNotIndexed();
-  $context['message'] = t('@count item(s) left.', array('@count' => $not_indexed_count));
-  $finished = $not_indexed_count == 0 ? 1 : $not_indexed_count / $context['sandbox']['total'];
-  $context['finished'] = $finished;
-}
-
-/**
- * Implements hook_cron().
- */
-function neo4j_connector_cron() {
-  neo4j_connector_get_index()->processIndex();
-}
-
-/**
  * Delete all graph data.
  */
 function neo4j_connector_purge_db() {
@@ -109,35 +71,4 @@ function neo4j_connector_purge_db() {
     START n = node(*)
     DELETE n
   ");
-
-  neo4j_connector_get_index()->deleteAll();
-}
-
-/**
- * Loads index info for a given index. (Such as the entity index.)
- *
- * @param $index_name
- *  Name of the index.
- * @return array
- *
- * @see neo4j_connector_index_info()
- */
-function neo4j_connector_index_info_load($index_name) {
-  $index_info = neo4j_connector_index_info();
-  return $index_info[$index_name];
-}
-
-/**
- * Get all index information available.
- *
- * @return array
- */
-function neo4j_connector_index_info() {
-  static $index_info = NULL;
-
-  if (!$index_info) {
-    $index_info = \Drupal::moduleHandler()->invokeAll('neo4j_connector_index_info');
-  }
-
-  return $index_info;
 }
