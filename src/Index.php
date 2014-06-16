@@ -193,6 +193,11 @@ class Index {
     }
   }
 
+  /**
+   * @param IndexItem $indexItem
+   * @param bool $include_relationships
+   * @return bool|\Everyman\Neo4j\Node
+   */
   public function addNode(IndexItem $indexItem, $include_relationships = self::INCLUDE_RELATIONSHIP) {
     list($index_param, $properties, $labels) = $this->getNodeInfo($indexItem);
     $graph_node = Neo4JDrupal::sharedInstance()->addNode($properties, $labels, $index_param);
@@ -245,6 +250,12 @@ class Index {
     \Drupal::moduleHandler()->alter('neo4j_connector_labels', $labels, $indexItem);
 
     return array($index_param, $properties, $labels);
+  }
+
+  public function index(\Drupal\search_api\Item\ItemInterface $item) {
+    // Delete old.
+
+    // Index.
   }
 
 }

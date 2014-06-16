@@ -6,8 +6,19 @@
  * Time: 10:45 AM
  */
 
-use \Drupal\search_api\Backend\BackendPluginBase;
+namespace Drupal\search_api_neo4j\Plugin\SearchApi\Backend;
 
+use Drupal\neo4j_connector\Neo4JIndexParam;
+use Drupal\search_api\Backend\BackendPluginBase;
+use Drupal\search_api\Utility\Utility;
+
+/**
+ * @SearchApiBackend(
+ *   id = "search_api_neo4j",
+ *   label = @Translation("Neo4J graph database"),
+ *   description = @Translation("Index items into graph database.")
+ * )
+ */
 class SearchApiNeo4JBackend extends BackendPluginBase {
 
   /**
@@ -32,8 +43,25 @@ class SearchApiNeo4JBackend extends BackendPluginBase {
    * @see \Drupal\Core\Render\Element::child()
    */
   public function indexItems(\Drupal\search_api\Index\IndexInterface $index, array $items) {
-    // TODO: Implement indexItems() method.
-    return array();
+    $indexed_keys = array();
+    $client = neo4j_connector_get_client();
+    foreach ($items as $item_key => $item) {
+      // Delete from index if exist.
+      $graph_node = $client->getNodeByIndex($index->machine_name, $item_key);
+      if ($graph_node) {
+        list($properties, $labels) = $this->getNodeInfo($item);
+        $client->updateNode($properties, $labels, $graph_node);
+        \Drupal::moduleHandler()->invokeAll('neo4j_connector_graph_node_update', array($graph_node, $item));
+      }
+      else {
+        list($properties, $labels) = $this->getNodeInfo($item);
+        $index_param = new Neo4JIndexParam($index->machine_name, $client::DEFAULT_INDEX_KEY, $item_key);
+        $client->addNode($properties, $labels, $index_param);
+      }
+      $indexed_keys[] = $item_key;
+    }
+
+    return $indexed_keys;
   }
 
   /**
@@ -48,7 +76,13 @@ class SearchApiNeo4JBackend extends BackendPluginBase {
    *   If an error occurred while trying to delete the items.
    */
   public function deleteItems(\Drupal\search_api\Index\IndexInterface $index, array $ids) {
-    // TODO: Implement deleteItems() method.
+    $client = neo4j_connector_get_client();
+    foreach ($ids as $id) {
+      $graph_node = $client->getNodeByIndex($index->machine_name, $id);
+      if ($graph_node) {
+        $client->deleteNode($graph_node);
+      }
+    }
   }
 
   /**
@@ -61,7 +95,7 @@ class SearchApiNeo4JBackend extends BackendPluginBase {
    *   If an error occurred while trying to delete the items.
    */
   public function deleteAllIndexItems(\Drupal\search_api\Index\IndexInterface $index) {
-    // TODO: Implement deleteAllIndexItems() method.
+    neo4j_connector_purge_db();
   }
 
   /**
@@ -78,7 +112,20 @@ class SearchApiNeo4JBackend extends BackendPluginBase {
    */
   public function search(\Drupal\search_api\Query\QueryInterface $query) {
     // TODO: Implement search() method.
-    return NULL;
+    $results = Utility::createSearchResultSet($query);
+    $results->setResultCount(0);
+
+    return $results;
+  }
+
+  public function getNodeInfo(\Drupal\search_api\Item\ItemInterface $item) {
+    $properties = array();
+    \Drupal::moduleHandler()->alter('neo4j_connector_properties', $properties, $item);
+
+    $labels = array();
+    \Drupal::moduleHandler()->alter('neo4j_connector_labels', $labels, $item);
+
+    return array($properties, $labels);
   }
 
 }

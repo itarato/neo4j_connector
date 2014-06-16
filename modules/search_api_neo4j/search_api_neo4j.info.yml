@@ -5,3 +5,4 @@ package: Search
 core: 8.x
 dependencies:
   - search_api
+  - neo4j_connector

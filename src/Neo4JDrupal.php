@@ -10,6 +10,7 @@ use Everyman\Neo4j\Client;
 use Everyman\Neo4j\Index\NodeIndex;
 use Everyman\Neo4j\Label;
 use Everyman\Neo4j\Node;
+use Everyman\Neo4j\PropertyContainer;
 
 /**
  * Class Neo4JDrupal
@@ -49,6 +50,8 @@ class Neo4JDrupal {
    * Property name on the relationship that contains the owner graph node's ID.
    */
   const OWNER = 'owner-id';
+
+  const DEFAULT_INDEX_KEY = 'id';
 
   /**
    * Constructor.
@@ -178,28 +181,23 @@ class Neo4JDrupal {
    * @param Neo4JIndexParam $indexParam
    *  Index.
    */
-  public function deleteNode(Neo4JIndexParam $indexParam) {
-    $this->deleteRelationships($indexParam);
+  public function deleteNode(Node $graph_node, $index_machine_name = NULL) {
+    $this->deleteRelationships($graph_node);
 
-    if ($graph_node = $this->getGraphNodeOfIndex($indexParam)) {
-      $this->getIndex($indexParam->name)->remove($graph_node);
-      $graph_node->delete();
-      watchdog(__METHOD__, 'Graph node has been deleted: @nid', array('@nid' => $graph_node->getId()));
+    if ($index_machine_name) {
+      $this->getIndex($index_machine_name)->remove($graph_node);
     }
+    $graph_node->delete();
+    watchdog(__METHOD__, 'Graph node has been deleted: @nid', array('@nid' => $graph_node->getId()));
   }
 
   /**
    * Remove all relationships from a graph node.
-   *
-   * @param Neo4JIndexParam $indexParam
-   *  Index.
    */
-  public function deleteRelationships(Neo4JIndexParam $indexParam) {
-    if ($node = $this->getGraphNodeOfIndex($indexParam)) {
-      $relationships = $node->getRelationships();
-      foreach ($relationships as $relationship) {
-        $relationship->delete();
-      }
+  public function deleteRelationships(Node $node) {
+    $relationships = $node->getRelationships();
+    foreach ($relationships as $relationship) {
+      $relationship->delete();
     }
   }
 
@@ -207,17 +205,9 @@ class Neo4JDrupal {
    * Update a graph node.
    * Removes and reestablish all relationships (fields and references).
    *
-   * @param array $properties
-   *  Properties to store.
-   * @param $labels
-   * @param Neo4JIndexParam $index_param
-   *  Index.
-   *
-   * @return Node
    */
-  public function updateNode(array $properties, array $labels = array(), Neo4JIndexParam $index_param = NULL) {
+  public function updateNode(array $properties, array $labels = array(), Node $graph_node) {
     // @todo possible duplication of AddNode - wrap it
-    $graph_node = $this->getGraphNodeOfIndex($index_param);
     $graph_node->setProperties($properties);
     $graph_node->save();
 
@@ -275,6 +265,10 @@ class Neo4JDrupal {
       '@id' => $index_id,
     ), WATCHDOG_WARNING);
     return NULL;
+  }
+
+  public function getNodeByIndex($index_name, $value) {
+    return $this->getIndex($index_name)->findOne(self::DEFAULT_INDEX_KEY, $value);
   }
 
 }
