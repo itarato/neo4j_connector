@@ -1,0 +1,45 @@
+<?php
+
+/**
+ * Implements hook_neo4j_connector_properties_alter().
+ */
+function search_api_neo4j_neo4j_connector_properties_alter(array &$properties, \Drupal\search_api\Item\ItemInterface $item) {
+  if (strpos($item->getDatasourceId(), 'entity') !== 0) {
+    // Not an entity.
+    return;
+  }
+
+  $entity = $item->getOriginalObject();
+
+  switch ($entity->getEntityTypeId()) {
+    case 'node':
+      $properties['title'] = $entity->title[0]->getValue()['value'];
+      break;
+
+    case 'user':
+      $properties['title'] = $entity->name[0]->getValue()['value'];
+      $properties['mail'] = $entity->mail[0]->getValue()['value'];
+      break;
+
+    case 'taxonomy_term':
+      $properties['title'] = $entity->name->value;
+      break;
+  }
+
+  $properties['entity_id'] = $entity->id();
+  $properties['entity_type'] = $entity->getEntityTypeId();
+  $properties['entity_bundle'] = $entity->bundle();
+}
+
+/**
+ * Implements hook_neo4j_connector_labels_alter().
+ */
+function search_api_neo4j_neo4j_connector_labels_alter(array &$labels, \Drupal\search_api\Item\ItemInterface $item) {
+  if (strpos($item->getDatasourceId(), 'entity') !== 0) {
+    return;
+  }
+
+  $entity = $item->getOriginalObject();
+
+  $labels[] = $entity->getEntityTypeId();
+}
