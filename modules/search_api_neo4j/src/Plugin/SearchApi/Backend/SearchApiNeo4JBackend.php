@@ -11,6 +11,7 @@ namespace Drupal\search_api_neo4j\Plugin\SearchApi\Backend;
 use Drupal\neo4j_connector\Neo4JIndexParam;
 use Drupal\search_api\Backend\BackendPluginBase;
 use Drupal\search_api\Utility\Utility;
+use Drupal\search_api_neo4j\Neo4JIndexParamFactory;
 
 /**
  * @SearchApiBackend(
@@ -46,18 +47,21 @@ class SearchApiNeo4JBackend extends BackendPluginBase {
     $indexed_keys = array();
     $client = neo4j_connector_get_client();
     foreach ($items as $item_key => $item) {
+      list($properties, $labels) = $this->getNodeInfo($item);
+
       // Delete from index if exist.
-      $graph_node = $client->getNodeByIndex($index->machine_name, $item_key);
+      $index_param = Neo4JIndexParamFactory::from($item);
+      $graph_node = $client->getGraphNodeOfIndex($index_param);
+//      $graph_node = $client->getNodeByIndex($index->machine_name, $item_key);
       if ($graph_node) {
-        list($properties, $labels) = $this->getNodeInfo($item);
         $client->updateNode($properties, $labels, $graph_node);
       }
       else {
-        list($properties, $labels) = $this->getNodeInfo($item);
-        $index_param = new Neo4JIndexParam($index->machine_name, $client::DEFAULT_INDEX_KEY, $item_key);
+//        $index_param = new Neo4JIndexParam($index->machine_name, $client::DEFAULT_INDEX_KEY, $item_key);
+//        $index_param = search_api_neo4j_get_index_param_of_item($item);
         $graph_node = $client->addNode($properties, $labels, $index_param);
-        \Drupal::moduleHandler()->invokeAll('neo4j_connector_graph_node_update', array($graph_node, $item));
       }
+      \Drupal::moduleHandler()->invokeAll('neo4j_connector_graph_node_update', array($graph_node, $item));
       $indexed_keys[] = $item_key;
     }
 

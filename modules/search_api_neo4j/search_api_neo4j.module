@@ -53,22 +53,37 @@ function search_api_neo4j_neo4j_connector_graph_node_update(\Everyman\Neo4j\Node
 
   $entity = $item->getOriginalObject();
 
-  // Connect fields.
-  $field_instances = \Drupal::entityManager()->getFieldDefinitions($entity->getEntityTypeId(), $entity->bundle());
-  foreach ($field_instances as $field_machine_name => $field_instance) {
-    $field_info = \Drupal\field\Entity\FieldConfig::loadByName($entity->getEntityTypeId(), $field_machine_name);
-    if ($field_info && $neo4jFieldHandler = Neo4JDrupalFieldHandlerFactory::getInstance($field_info, $graph_node)) {
-      $neo4jFieldHandler->processFieldData($entity, $field_machine_name);
-    }
+  foreach ($item->getFields() as $field) {
+    $field_handler = \Drupal\search_api_neo4j\Neo4JDrupalFieldHandlerFactory::getInstance($graph_node, $field);
   }
 
-  if ($entity->getEntityTypeId() == 'node') {
-    // Connect to author.
-    if ($uid = $entity->uid->value) {
-      $client = neo4j_connector_get_client();
-      $index_param = neo4j_entity_index_get_index_param(new IndexItem(NEO4J_ENTITY_INDEX_DOMAIN, "user:$uid"));
-      $client->connectOrCreate($graph_node, $index_param, NEO4J_ENTITY_INDEX_DOMAIN, "user:$uid", 'author');
-    }
-  }
+//  // Connect fields.
+//  $field_instances = \Drupal::entityManager()->getFieldDefinitions($entity->getEntityTypeId(), $entity->bundle());
+//  foreach ($field_instances as $field_machine_name => $field_instance) {
+//    $field_info = \Drupal\field\Entity\FieldConfig::loadByName($entity->getEntityTypeId(), $field_machine_name);
+//    if ($field_info && $neo4jFieldHandler = Neo4JDrupalFieldHandlerFactory::getInstance($field_info, $graph_node)) {
+//      $neo4jFieldHandler->processFieldData($entity, $field_machine_name);
+//    }
+//  }
+
+//  if ($entity->getEntityTypeId() == 'node') {
+//    // Connect to author.
+//    if ($uid = $entity->uid->value) {
+//      $client = neo4j_connector_get_client();
+//      $index_param = neo4j_entity_index_get_index_param(new IndexItem(NEO4J_ENTITY_INDEX_DOMAIN, "user:$uid"));
+//      $client->connectOrCreate($graph_node, $index_param, NEO4J_ENTITY_INDEX_DOMAIN, "user:$uid", 'author');
+//    }
+//  }
 }
 
+//function search_api_neo4j_get_index_param_of_item(\Drupal\search_api\Item\ItemInterface $item) {
+//  list($main_type) = explode(':', $item->getDatasourceId());
+//
+//  if ($main_type == 'entity') {
+//    /* @var \Drupal\Core\Entity\EntityInterface $entity */
+//    $entity = $item->getOriginalObject();
+//    return new \Drupal\neo4j_connector\Neo4JIndexParam($item->getDatasourceId(), 'entity_id', $entity->id());
+//  }
+//
+//  return FALSE;
+//}
