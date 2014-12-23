@@ -54,7 +54,9 @@ function search_api_neo4j_neo4j_connector_graph_node_update(\Everyman\Neo4j\Node
   $entity = $item->getOriginalObject();
 
   foreach ($item->getFields() as $field) {
-    $field_handler = \Drupal\search_api_neo4j\Neo4JDrupalFieldHandlerFactory::getInstance($graph_node, $field);
+    /* @var $field_handler \Drupal\search_api_neo4j\Neo4JDrupalAbstractFieldHandler */
+    $field_handler = \Drupal\search_api_neo4j\Neo4JDrupalFieldHandlerFactory::getInstance($field);
+//    $field_handler->processFieldItem($entity);
   }
 
 //  // Connect fields.

@@ -5,6 +5,7 @@
 
 namespace Drupal\search_api_neo4j;
 
+use Drupal\field\Entity\FieldInstanceConfig;
 use Drupal\field\FieldConfigInterface;
 use Drupal\search_api\Item\FieldInterface;
 use Everyman\Neo4j\Node;
@@ -27,21 +28,22 @@ class Neo4JDrupalFieldHandlerFactory {
    *  Graph node.
    * @return Neo4JDrupalAbstractFieldHandler|NULL
    */
-  public static function getInstance(Node $graph_node, FieldInterface $field) {
+  public static function getInstance(FieldInterface $field) {
+    // @todo assuming that the field is directly on the original object.
 //    $module_name = $field_info->module;
     list(,$field_type) = explode(':', $field->getOriginalType());
     switch ($field_type) {
-      case 'entity_reference':
+      case 'taxonomy_term_reference':
         list($host_item_key, $field_name) = explode('|', $field->getFieldIdentifier());
         list(,$entity_type) = explode(':', $host_item_key);
 //        $field_instances = \Drupal::entityManager()->getFieldDefinitions($entity_type, $bundle);
-        $field_info = \Drupal\field\Entity\FieldConfig::loadByName($entity_type, $field_name);
-        foreach ($field->getValues() as $value) {
+//        $field_info = FieldInstanceConfig::loadByName($entity_type, $field_name);
+//        foreach ($field->getValues() as $value) {
           // item <- find item - or create item
-          $index_param = Neo4JIndexParamFactory::fromFieldAndValue($field_info, $value);
+//          $index_param = Neo4JIndexParamFactory::fromFieldAndValue($field_info, $value);
 
           // connect items
-        }
+//        }
 
 //        $target_type = $field_info->settings['target_type'];
 //        $indexParam = new Neo4JIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . $target_type, 'entity_id');

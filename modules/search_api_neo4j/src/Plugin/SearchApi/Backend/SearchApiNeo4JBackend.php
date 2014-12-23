@@ -50,15 +50,12 @@ class SearchApiNeo4JBackend extends BackendPluginBase {
       list($properties, $labels) = $this->getNodeInfo($item);
 
       // Delete from index if exist.
-      $index_param = Neo4JIndexParamFactory::from($item);
+      $index_param = Neo4JIndexParamFactory::fromIndexItem($item);
       $graph_node = $client->getGraphNodeOfIndex($index_param);
-//      $graph_node = $client->getNodeByIndex($index->machine_name, $item_key);
       if ($graph_node) {
         $client->updateNode($properties, $labels, $graph_node);
       }
       else {
-//        $index_param = new Neo4JIndexParam($index->machine_name, $client::DEFAULT_INDEX_KEY, $item_key);
-//        $index_param = search_api_neo4j_get_index_param_of_item($item);
         $graph_node = $client->addNode($properties, $labels, $index_param);
       }
       \Drupal::moduleHandler()->invokeAll('neo4j_connector_graph_node_update', array($graph_node, $item));

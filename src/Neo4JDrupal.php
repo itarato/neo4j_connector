@@ -51,8 +51,6 @@ class Neo4JDrupal {
    */
   const OWNER = 'owner-id';
 
-  const DEFAULT_INDEX_KEY = 'id';
-
   /**
    * Constructor.
    * Use Neo4JDrupal::sharedInstance() instead.
@@ -245,12 +243,11 @@ class Neo4JDrupal {
     return FALSE;
   }
 
-  public function connectOrCreate(Node $host_node, Neo4JIndexParam $guest_index_param, $index_domain, $index_id, $relation_name) {
+  public function connectOrCreate(Node $host_node, Neo4JIndexParam $guest_index_param, $relation_name) {
     $guest_node = $this->getGraphNodeOfIndex($guest_index_param);
 
     if (!$guest_node) {
-      $indexItem = new IndexItem($index_domain, $index_id);
-      $guest_node = neo4j_connector_get_index()->addNode($indexItem, Index::DO_NOT_INCLUDE_RELATIONSHIP);
+      $guest_node = $this->addNode(array(), array(), $guest_index_param);
     }
 
     if ($guest_node) {
@@ -260,15 +257,8 @@ class Neo4JDrupal {
       return $guest_node;
     }
 
-    watchdog(__CLASS__, 'Unable to connect to reference. Domain: @domain, id: @id.', array(
-      '@domain' => $index_domain,
-      '@id' => $index_id,
-    ), WATCHDOG_WARNING);
+    watchdog(__CLASS__, 'Unable to connect to reference.', array(), WATCHDOG_WARNING);
     return NULL;
-  }
-
-  public function getNodeByIndex($index_name, $value) {
-    return $this->getIndex($index_name)->findOne(self::DEFAULT_INDEX_KEY, $value);
   }
 
 }
