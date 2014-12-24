@@ -47,9 +47,9 @@ class Neo4JAdminForm extends ConfigFormBase {
 
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $this->configFactory->get('neo4j_connector.site')
-      ->set('host', $form_state['values']['host'])
-      ->set('port', $form_state['values']['port'])
-      ->set('index_immediately', $form_state['values']['index_immediately'])
+      ->set('host', $form_state->getValue('host'))
+      ->set('port', $form_state->getValue('port'))
+      ->set('index_immediately', $form_state->getValue('index_immediately'))
       ->save();
 
     parent::submitForm($form, $form_state);

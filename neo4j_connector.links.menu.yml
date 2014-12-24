@@ -6,7 +6,7 @@ neo4j_connector.admin:
   description: 'Neo4J admin configurations'
 
 neo4j_connector.settings:
-  title: 'Neo4J-connector settings'
+  title: 'Settings'
   parent: neo4j_connector.admin
   route_name: neo4j_connector.settings
   description: 'General configuration'
@@ -20,7 +20,7 @@ neo4j_connector.index:
   weight: 1
 
 neo4j_connector.console:
-  title: 'Neo4J Cypher query console'
+  title: 'Cypher console'
   parent: neo4j_connector.admin
   route_name: neo4j_connector.console
   description: 'Execute Cypher queries'

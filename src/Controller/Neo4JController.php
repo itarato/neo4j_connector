@@ -33,7 +33,9 @@ class Neo4JController extends ControllerBase {
 
     if (!$index_info) {
       // Exit - no index.
-      return t('No index enabled. Enable neo4j_entity_index or other index modules.');
+      return array(
+        '#markup' => t('No index enabled. Enable neo4j_entity_index or other index modules.'),
+      );
     }
 
     $rows = array();
@@ -54,11 +56,11 @@ class Neo4JController extends ControllerBase {
       '#header' => array(t('Index'), NULL, t('Settings')),
     );
 
-    return implode('<br><hr><br>', array(
-      \Drupal::service('renderer')->render($indexes),
-      \Drupal::service('renderer')->render($purge_form),
-      \Drupal::service('renderer')->render($reindex_form),
-    ));
+    return array(
+      $indexes,
+      $purge_form,
+      $reindex_form,
+    );
   }
 
   public static function create(ContainerInterface $container) {
