@@ -7,11 +7,9 @@
 namespace Drupal\neo4j_connector\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
-use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Drupal\neo4j_connector\Neo4JDrupal;
 
-class Neo4JController extends ControllerBase implements ContainerInjectionInterface {
+class Neo4JController extends ControllerBase {
 
   public function __construct() {
   }
@@ -27,8 +25,7 @@ class Neo4JController extends ControllerBase implements ContainerInjectionInterf
     }
 
     $settings_form = \Drupal::formBuilder()->getForm('Drupal\neo4j_connector\Form\Neo4JAdminForm');
-
-    return drupal_render($settings_form);
+    return $settings_form;
   }
 
   public function indexSettings() {
