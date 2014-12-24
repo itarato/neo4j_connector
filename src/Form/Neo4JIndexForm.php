@@ -9,6 +9,7 @@
 namespace Drupal\neo4j_connector\Form;
 
 use Drupal\Core\Form\FormBase;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\neo4j_connector\Neo4JDrupalIndexStat;
 
 class Neo4JIndexForm extends FormBase {
@@ -17,7 +18,7 @@ class Neo4JIndexForm extends FormBase {
     return 'neo4j_connector_form_reindex';
   }
 
-  public function buildForm(array $form, array &$form_state) {
+  public function buildForm(array $form, FormStateInterface $form_state) {
     $form['submit'] = array(
       '#type' => 'submit',
       '#value' => t('Index'),
@@ -34,7 +35,7 @@ class Neo4JIndexForm extends FormBase {
     return $form;
   }
 
-  public function submitForm(array &$form, array &$form_state) {
+  public function submitForm(array &$form, FormStateInterface $form_state) {
     $batch = array(
       'operations' => array(
         array('_neo4j_connector_batch_op_reindex', array()),

@@ -6,6 +6,7 @@
 namespace Drupal\neo4j_connector\Form;
 
 use Drupal\Core\Form\FormBase;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Class Neo4JPurgeDBForm
@@ -17,7 +18,7 @@ class Neo4JPurgeDBForm extends FormBase {
     return 'neo4j_connector_form_purge_all_graph_db';
   }
 
-  public function buildForm(array $form, array &$form_state) {
+  public function buildForm(array $form, FormStateInterface $form_state) {
     $form['submit'] = array(
       '#type' => 'submit',
       '#value' => t('Delete all graph data'),
@@ -31,7 +32,7 @@ class Neo4JPurgeDBForm extends FormBase {
     return $form;
   }
 
-  public function submitForm(array &$form, array &$form_state) {
+  public function submitForm(array &$form, FormStateInterface $form_state) {
     neo4j_connector_purge_db();
     drupal_set_message(t('All relationships and nodes have been deleted.'));
   }

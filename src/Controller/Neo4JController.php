@@ -58,9 +58,9 @@ class Neo4JController extends ControllerBase implements ContainerInjectionInterf
     );
 
     return implode('<br><hr><br>', array(
-      drupal_render($indexes),
-      drupal_render($purge_form),
-      drupal_render($reindex_form),
+      \Drupal::service('renderer')->render($indexes),
+      \Drupal::service('renderer')->render($purge_form),
+      \Drupal::service('renderer')->render($reindex_form),
     ));
   }
 

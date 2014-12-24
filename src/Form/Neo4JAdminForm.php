@@ -6,6 +6,7 @@ namespace Drupal\neo4j_connector\Form;
 
 use Drupal\Core\Config\ConfigFactory;
 use Drupal\Core\Form\ConfigFormBase;
+use Drupal\Core\Form\FormStateInterface;
 
 class Neo4JAdminForm extends ConfigFormBase {
 
@@ -17,7 +18,7 @@ class Neo4JAdminForm extends ConfigFormBase {
     return 'neo4j_connector_admin_settings';
   }
 
-  public function buildForm(array $form, array &$form_state) {
+  public function buildForm(array $form, FormStateInterface $form_state) {
     $settings = $this->configFactory->get('neo4j_connector.site');
 
     $form['host'] = array(
@@ -44,7 +45,7 @@ class Neo4JAdminForm extends ConfigFormBase {
     return parent::buildForm($form, $form_state);
   }
 
-  public function submitForm(array &$form, array &$form_state) {
+  public function submitForm(array &$form, FormStateInterface $form_state) {
     $this->configFactory->get('neo4j_connector.site')
       ->set('host', $form_state['values']['host'])
       ->set('port', $form_state['values']['port'])

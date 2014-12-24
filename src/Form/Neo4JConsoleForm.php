@@ -6,7 +6,7 @@
 namespace Drupal\neo4j_connector\Form;
 
 use Drupal\Core\Form\FormBase;
-use Drupal\neo4j_connector\Neo4JDrupal;
+use Drupal\Core\Form\FormStateInterface;
 use \Everyman\Neo4j\Exception as Neo4J_Exception;
 
 class Neo4JConsoleForm extends FormBase {
@@ -15,7 +15,7 @@ class Neo4JConsoleForm extends FormBase {
     return 'neo4j_connector_console';
   }
 
-  public function buildForm(array $form, array &$form_state) {
+  public function buildForm(array $form, FormStateInterface $form_state) {
     $form['query'] = array(
       '#type' => 'textarea',
       '#title' => t('Query'),
@@ -29,9 +29,9 @@ class Neo4JConsoleForm extends FormBase {
     return $form;
   }
 
-  public function validateForm(array &$form, array &$form_state) { }
+  public function validateForm(array &$form, FormStateInterface $form_state) { }
 
-  public function submitForm(array &$form, array &$form_state) {
+  public function submitForm(array &$form, FormStateInterface $form_state) {
     try {
       $client = neo4j_connector_get_client();
       $result_set = $client->query($form_state['values']['query']);
