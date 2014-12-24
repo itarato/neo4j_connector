@@ -22,7 +22,7 @@ function neo4j_entity_index_neo4j_connector_index_info() {
       'label' => t('Entity index'),
       'index marker callback' => 'neo4j_entity_index_mark_for_index',
       'index param callback' => 'neo4j_entity_index_get_index_param',
-      'settings path' => '/admin/config/neo4j_entity_index/settings',
+      'settings path' => 'neo4j_entity_index.settings',
     ),
   );
 }
@@ -263,5 +263,5 @@ function neo4j_entity_index_is_indexable_type($entity_type) {
     $entity_types_to_index = \Drupal::config('neo4j_entity_index.global')->get('entity_types');
   }
 
-  return in_array($entity_type, $entity_types_to_index);
+  return in_array($entity_type, $entity_types_to_index, TRUE);
 }

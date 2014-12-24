@@ -56,10 +56,10 @@ class Index {
         break;
 
       default:
-        watchdog(__METHOD__, 'Unexpected index status @status for: @index', array(
+        \Drupal::logger(__CLASS__)->error('Unexpected index status @status for: @index', [
           '@status' => $index_status,
           '@index' => $indexItem,
-        ), WATCHDOG_ERROR);
+        ]);
         break;
     }
   }
@@ -72,30 +72,36 @@ class Index {
    *  Index status code.
    */
   public function markWithStatus(IndexItem $indexItem, $index_status) {
-    $result = db_query("
+    $result = \Drupal::database()->query("
       SELECT *
       FROM {neo4j_connector_index}
       WHERE domain = :domain AND id = :id
     ", array(':domain' => $indexItem->getDomain(), ':id' => $indexItem->getId()))->fetchObject();
 
-    $index_item_record = NULL;
+    $index_item_record = [];
     if (!$result) {
-      $index_item_record = new \stdClass();
-      $index_item_record->domain = $indexItem->getDomain();
-      $index_item_record->id = $indexItem->getId();
-    }
-    else {
-      $index_item_record = $result;
+      $index_item_record['domain'] = $indexItem->getDomain();
+      $index_item_record['id'] = $indexItem->getId();
     }
 
-    $index_item_record->changed = $_SERVER['REQUEST_TIME'];
-    $index_item_record->status = $index_status;
+    $index_item_record['changed'] = $_SERVER['REQUEST_TIME'];
+    $index_item_record['status'] = $index_status;
 
     if (!$result) {
-      drupal_write_record('neo4j_connector_index', $index_item_record);
+      \Drupal::database()
+        ->insert('neo4j_connector_index')
+        ->fields($index_item_record)
+        ->execute();
     }
     else {
-      drupal_write_record('neo4j_connector_index', $index_item_record, array('domain', 'id'));
+      \Drupal::database()
+        ->merge('neo4j_connector_index')
+        ->keys([
+          'domain' => $indexItem->getDomain(),
+          'id' => $indexItem->getId(),
+        ])
+        ->fields($index_item_record)
+        ->execute();
     }
   }
 
@@ -140,7 +146,7 @@ class Index {
    */
   public function deleteAll() {
     db_query("DELETE FROM {neo4j_connector_index}");
-    watchdog(__METHOD__, 'Index has been purged.', array(), WATCHDOG_INFO);
+    \Drupal::logger(__CLASS__)->info('Index has been purged.');
   }
 
   /**
@@ -184,10 +190,10 @@ class Index {
           break;
 
         default:
-          watchdog(__METHOD__, 'Unexpected index status @status for index: @index', array(
+          \Drupal::logger(__CLASS__)->error('Unexpected index status @status for index: @index', [
             '@status' => $status,
             '@index' => $indexItem,
-          ), WATCHDOG_ERROR);
+          ]);
           break;
       }
     }
@@ -198,7 +204,7 @@ class Index {
     $graph_node = Neo4JDrupal::sharedInstance()->addNode($properties, $labels, $index_param);
 
     if (!$graph_node) {
-      watchdog(__METHOD__, 'Graph node could not be created. Index: @index', array('@index' => $indexItem->getDomain()), WATCHDOG_ERROR);
+      \Drupal::logger(__CLASS__)->error('Graph node could not be created. Index: @index', ['@index' => $indexItem->getDomain()]);
       return FALSE;
     }
 

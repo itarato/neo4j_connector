@@ -7,6 +7,9 @@
 namespace Drupal\neo4j_connector\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
+use Drupal\Core\Url;
+use Drupal
+\Drupal;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class Neo4JController extends ControllerBase {
@@ -40,10 +43,12 @@ class Neo4JController extends ControllerBase {
 
     $rows = array();
     foreach ($index_info as $key => $index) {
+      $mark_link = \Drupal::l(t('Mark all for index'), new Url('neo4j_connector.index.purge', ['neo4j_connector_index' => $key]));
+      $setting_path = \Drupal::l(t('settings'), new Url($index['settings path']));
       $rows[] = array(
         $index['label'],
-        l(t('Mark all for index'), 'admin/config/neo4j/settings/index/' . $key . '/mark_for_index'),
-        isset($index['settings path']) ? l(t('settings'), $index['settings path']) : '',
+        $mark_link,
+        isset($index['settings path']) ? $setting_path : '',
       );
     }
 

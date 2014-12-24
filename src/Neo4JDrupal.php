@@ -167,7 +167,7 @@ class Neo4JDrupal {
       $this->getIndex($indexParam->name)->add($node, $indexParam->key, $indexParam->value);
     }
 
-    watchdog(__METHOD__, 'Graph node has been created: @id', array('@id' => $node->getId()));
+    \Drupal::logger(__CLASS__)->info('Graph node has been created: @id', ['@id' => $node->getId()]);
 
     return $node;
   }
@@ -184,7 +184,7 @@ class Neo4JDrupal {
     if ($graph_node = $this->getGraphNodeOfIndex($indexParam)) {
       $this->getIndex($indexParam->name)->remove($graph_node);
       $graph_node->delete();
-      watchdog(__METHOD__, 'Graph node has been deleted: @nid', array('@nid' => $graph_node->getId()));
+      \Drupal::logger(__CLASS__)->info('Graph node has been deleted: @nid', ['@nid' => $graph_node->getId()]);
     }
   }
 
@@ -270,10 +270,10 @@ class Neo4JDrupal {
       return $guest_node;
     }
 
-    watchdog(__CLASS__, 'Unable to connect to reference. Domain: @domain, id: @id.', array(
+    \Drupal::logger(__CLASS__)->warning('Unable to connect to reference. Domain: @domain, id: @id.', [
       '@domain' => $index_domain,
       '@id' => $index_id,
-    ), WATCHDOG_WARNING);
+    ]);
     return NULL;
   }
 

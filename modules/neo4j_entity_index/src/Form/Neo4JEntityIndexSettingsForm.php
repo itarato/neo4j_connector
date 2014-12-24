@@ -7,6 +7,7 @@ namespace Drupal\neo4j_entity_index\Form;
 
 use Drupal\Core\Config\ConfigFactory;
 use Drupal\Core\Form\ConfigFormBase;
+use Drupal\Core\Form\FormStateInterface;
 
 class Neo4JEntityIndexSettingsForm extends ConfigFormBase {
 
@@ -35,7 +36,7 @@ class Neo4JEntityIndexSettingsForm extends ConfigFormBase {
    * @return array
    *   The form structure.
    */
-  public function buildForm(array $form, array &$form_state) {
+  public function buildForm(array $form, FormStateInterface $form_state) {
     $settings = $this->config('neo4j_entity_index.global');
 
     $entity_types = \Drupal::entityManager()->getDefinitions();
@@ -70,9 +71,9 @@ class Neo4JEntityIndexSettingsForm extends ConfigFormBase {
    * @param array $form_state
    *   An associative array containing the current state of the form.
    */
-  public function submitForm(array &$form, array &$form_state) {
+  public function submitForm(array &$form, FormStateInterface $form_state) {
     $this->config('neo4j_entity_index.global')
-      ->set('entity_types', $form_state['values']['entity_types'])
+      ->set('entity_types', $form_state->getValue('entity_types'))
       ->save();
 
     parent::submitForm($form, $form_state);
