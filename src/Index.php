@@ -118,7 +118,7 @@ class Index {
    *    STATUS_UPDATE
    */
   protected function getStatus(IndexItem $indexItem) {
-    $result = db_query("
+    $result = \Drupal::database()->query("
       SELECT status
       FROM {neo4j_connector_index}
       WHERE domain = :domain AND id = :id
@@ -134,7 +134,7 @@ class Index {
    * @param IndexItem $indexItem
    */
   public function delete(IndexItem $indexItem) {
-    db_query("
+    \Drupal::database()->query("
       DELETE FROM {neo4j_connector_index}
       WHERE domain = :domain AND id = :id
     ", array(':domain' => $indexItem->getDomain(), ':id' => $indexItem->getId()));
@@ -145,7 +145,7 @@ class Index {
    * Delete all index. At this point nothing should be in the graph db.
    */
   public function deleteAll() {
-    db_query("DELETE FROM {neo4j_connector_index}");
+    \Drupal::database()->query("DELETE FROM {neo4j_connector_index}");
     \Drupal::logger(__CLASS__)->info('Index has been purged.');
   }
 
@@ -160,7 +160,7 @@ class Index {
       $limit = \Drupal::config('neo4j_connector.site')->get('index_process_limit');
     }
 
-    $records = db_query_range("
+    $records = \Drupal::database()->queryRange("
       SELECT *
       FROM {neo4j_connector_index}
       WHERE status != :status
