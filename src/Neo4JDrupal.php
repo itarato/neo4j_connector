@@ -247,6 +247,9 @@ class Neo4JDrupal {
     return FALSE;
   }
 
+  /**
+   * @deprecated
+   */
   public function connectOrCreate(Node $host_node, Neo4JIndexParam $guest_index_param, $index_domain, $index_id, $relation_name) {
     $guest_node = $this->getGraphNodeOfIndex($guest_index_param);
 

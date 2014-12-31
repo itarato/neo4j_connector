@@ -8,6 +8,8 @@ namespace Drupal\neo4j_entity_index\FieldConnectionHandler;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Field\FieldConfigInterface;
 use Drupal\Core\Field\FieldItemInterface;
+use Drupal\neo4j_connector\Index;
+use Drupal\neo4j_connector\IndexItem;
 use Drupal\neo4j_connector\Neo4JIndexParam;
 use Exception;
 
@@ -25,7 +27,13 @@ class ReferenceField extends AbstractFieldConnectionHandler {
 
   public function getFieldValueNode($field_value) {
     $index = $this->getFieldValueIndex($field_value);
-    return neo4j_connector_get_client()->getGraphNodeOfIndex($index);
+    $graphNode = neo4j_connector_get_client()->getGraphNodeOfIndex($index);
+    if ($graphNode) {
+      return $graphNode;
+    }
+
+    $indexItem = new IndexItem('entity', $this->entityType . ':' . $field_value);
+    return neo4j_connector_get_index()->addNode($indexItem, Index::DO_NOT_INCLUDE_RELATIONSHIP);
   }
 
   /**

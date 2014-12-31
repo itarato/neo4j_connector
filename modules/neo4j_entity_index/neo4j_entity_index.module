@@ -4,10 +4,13 @@
  * Entity index handlers.
  */
 
+use Drupal;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\field\Entity\FieldConfig;
 use Drupal\neo4j_connector\Neo4JIndexParam;
-use Drupal\neo4j_entity_index\FieldConnectionHandlerFactory;
 use Drupal\neo4j_connector\IndexItem;
+use Drupal\neo4j_entity_index\FieldConnectionHandler\Factory;
+use Everyman\Neo4j\Node;
 
 // Index domain name.
 define('NEO4J_ENTITY_INDEX_DOMAIN', 'entity');
@@ -37,7 +40,7 @@ function neo4j_entity_index_entity_insert(EntityInterface $entity) {
   $indexItem = new \Drupal\neo4j_connector\IndexItem(NEO4J_ENTITY_INDEX_DOMAIN, "{$entity->getEntityTypeId()}:{$entity->id()}");
   neo4j_connector_get_index()->mark($indexItem);
 
-  if (\Drupal::config('neo4j_connector.site')->get('index_immediately')) {
+  if (Drupal::config('neo4j_connector.site')->get('index_immediately')) {
     neo4j_connector_get_index()->addNode($indexItem);
   }
 }
@@ -53,7 +56,7 @@ function neo4j_entity_index_entity_update(EntityInterface $entity) {
   $indexItem = new \Drupal\neo4j_connector\IndexItem(NEO4J_ENTITY_INDEX_DOMAIN, "{$entity->getEntityTypeId()}:{$entity->id()}");
   neo4j_connector_get_index()->mark($indexItem);
 
-  if (\Drupal::config('neo4j_connector.site')->get('index_immediately')) {
+  if (Drupal::config('neo4j_connector.site')->get('index_immediately')) {
     neo4j_connector_get_index()->updateNode($indexItem);
   }
 }
@@ -68,7 +71,7 @@ function neo4j_entity_index_entity_delete(EntityInterface $entity) {
   $indexItem = new \Drupal\neo4j_connector\IndexItem(NEO4J_ENTITY_INDEX_DOMAIN, "{$entity->getEntityTypeId()}:{$entity->id()}");
   neo4j_connector_get_index()->delete($indexItem);
 
-  if (\Drupal::config('neo4j_connector.site')->get('index_immediately')) {
+  if (Drupal::config('neo4j_connector.site')->get('index_immediately')) {
     neo4j_connector_get_index()->deleteNode($indexItem);
   }
 }
@@ -121,7 +124,7 @@ function neo4j_entity_index_neo4j_connector_labels_alter(array &$labels, IndexIt
  * @see neo4j_entity_index_neo4j_connector_index_info()
  */
 function neo4j_entity_index_mark_for_index() {
-  $entity_types = \Drupal::entityManager()->getDefinitions();
+  $entity_types = Drupal::entityManager()->getDefinitions();
 
   $operations = array();
   foreach ($entity_types as $type => $info) {
@@ -160,13 +163,13 @@ function neo4j_entity_index_batch_op_mark_for_index($entity_type, $entity_id_key
   if (empty($context['sandbox'])) {
     $context['sandbox']['progress'] = 0;
 
-    $count_query = \Drupal::entityQuery($entity_type);
+    $count_query = Drupal::entityQuery($entity_type);
     $context['sandbox']['count'] = $count_query->count()->execute();
   }
 
   // @todo add not-in-() using the existing indexed ids.
 
-  $query = \Drupal::entityQuery($entity_type);
+  $query = Drupal::entityQuery($entity_type);
   $query->range($context['sandbox']['progress'], NEO4J_CONNECTOR_REINDEX_LIMIT);
   $query->sort($entity_id_key);
   $result = $query->execute();
@@ -194,38 +197,26 @@ function neo4j_entity_index_batch_op_mark_for_index($entity_type, $entity_id_key
  */
 function neo4j_entity_index_get_index_param(IndexItem $indexItem) {
   list($entity_type, $entity_id) = explode(':', $indexItem->getId());
-  return new \Drupal\neo4j_connector\Neo4JIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . $entity_type, 'entity_id', $entity_id);
+  return new Neo4JIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . $entity_type, 'entity_id', $entity_id);
 }
 
 /**
  * Implements hook_neo4j_connector_graph_node_update().
+ * @param \Everyman\Neo4j\Node $graph_node
+ * @param \Drupal\neo4j_connector\IndexItem $indexItem
  */
-function neo4j_entity_index_neo4j_connector_graph_node_update(\Everyman\Neo4j\Node $graph_node, IndexItem $indexItem) {
+function neo4j_entity_index_neo4j_connector_graph_node_update(Node $graph_node, IndexItem $indexItem) {
   $entity = neo4j_entity_index_get_entity_by_index_id($indexItem->getId());
 
   // Connect fields and properties.
-  $field_instances = \Drupal::entityManager()->getFieldDefinitions($entity->getEntityTypeId(), $entity->bundle());
+  $field_instances = Drupal::entityManager()->getFieldDefinitions($entity->getEntityTypeId(), $entity->bundle());
   foreach ($field_instances as $field_machine_name => $field_instance) {
-    $field_info = \Drupal\field\Entity\FieldConfig::loadByName($entity->getEntityTypeId(), $entity->bundle(), $field_machine_name);
-    /** @var \Drupal\neo4j_entity_index\IFieldConnectionHandler $handler */
-    $handler = FieldConnectionHandlerFactory::getInstance($field_machine_name, $entity, $field_info);
+    $field_info = FieldConfig::loadByName($entity->getEntityTypeId(), $entity->bundle(), $field_machine_name);
+    $handler = Factory::getInstance($field_machine_name, $entity, $field_info);
     if ($handler) {
       $handler->connect($graph_node);
     }
-
-//    if ($field_info && $neo4jFieldHandler = Neo4JDrupalFieldHandlerFactory::getInstance($field_info, $graph_node)) {
-//      $neo4jFieldHandler->processFieldData($entity, $field_machine_name);
-//    }
   }
-
-//  if ($entity->getEntityTypeId() == 'node') {
-//    // Connect to author.
-//    if ($uid = $entity->uid->value) {
-//      $client = neo4j_connector_get_client();
-//      $index_param = neo4j_entity_index_get_index_param(new IndexItem(NEO4J_ENTITY_INDEX_DOMAIN, "user:$uid"));
-//      $client->connectOrCreate($graph_node, $index_param, NEO4J_ENTITY_INDEX_DOMAIN, "user:$uid", 'author');
-//    }
-//  }
 }
 
 /**
@@ -247,7 +238,7 @@ function neo4j_entity_index_get_entity_by_index_id($id) {
  *  Entity type.
  * @param $entity_id
  *  Entity ID.
- * @return bool|\Everyman\Neo4j\Node
+ * @return bool|Node
  */
 function neo4j_entity_index_get_graph_node_for_type_and_id($entity_type, $entity_id) {
   $index_param = new Neo4JIndexParam(NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . $entity_type, 'entity_id', $entity_id);
@@ -265,7 +256,7 @@ function neo4j_entity_index_is_indexable_type($entity_type) {
   static $entity_types_to_index;
 
   if (!isset($entity_types_to_index)) {
-    $entity_types_to_index = \Drupal::config('neo4j_entity_index.global')->get('entity_types');
+    $entity_types_to_index = Drupal::config('neo4j_entity_index.global')->get('entity_types');
   }
 
   return in_array($entity_type, $entity_types_to_index, TRUE);

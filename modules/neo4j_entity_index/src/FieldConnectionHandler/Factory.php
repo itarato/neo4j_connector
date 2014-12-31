@@ -3,19 +3,16 @@
  * @file
  */
 
-namespace Drupal\neo4j_entity_index;
+namespace Drupal\neo4j_entity_index\FieldConnectionHandler;
 
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\field\FieldConfigInterface;
-use Drupal\neo4j_entity_index\FieldConnectionHandler\AbstractFieldConnectionHandler;
-use Drupal\neo4j_entity_index\FieldConnectionHandler\BasicField;
-use Drupal\neo4j_entity_index\FieldConnectionHandler\ReferenceField;
 
 /**
  * Class Neo4JDrupalFieldHandlerFactory
  * Factory to create field handler instances.
  */
-class FieldConnectionHandlerFactory {
+class Factory {
 
   /**
    * Create an instance of the appropriate field handler.
@@ -28,6 +25,11 @@ class FieldConnectionHandlerFactory {
     if ($field_info !== NULL) {
       switch ($field_info->getType()) {
         case 'text_with_summary':
+        case 'datetime':
+        case 'list_integer':
+        case 'list_string':
+        case 'integer':
+        case 'string':
           return new BasicField($entity, $field_name, $field_info);
 
         case 'comment':
@@ -38,6 +40,16 @@ class FieldConnectionHandlerFactory {
 
         case 'taxonomy_term_reference':
           return new ReferenceField($entity, $field_name, $field_info, 'taxonomy_term');
+      }
+    }
+    else {
+      switch ($field_name) {
+        case 'created':
+        case 'changed':
+          return new BasicField($entity, $field_name, $field_info);
+
+        case 'uid':
+          return new ReferenceField($entity, $field_name, $field_info, 'user');
       }
     }
 

@@ -48,6 +48,10 @@ abstract class AbstractFieldConnectionHandler {
     /** @var FieldItemInterface $field_item */
     foreach ($this->getFieldValues() as $field_item) {
       $field_value = $this->extractFieldValue($field_item);
+      if (!$field_value) {
+        continue;
+      }
+
       $fieldValueNode = $this->getFieldValueNode($field_value);
 
       if (!$fieldValueNode) {
