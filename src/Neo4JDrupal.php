@@ -128,16 +128,24 @@ class Neo4JDrupal {
    *
    * @param array $properties
    *  Properties array to store on the graph node.
-   * @param $labels
+   * @param array $labels
    *  Array of label strings.
-   * @param Neo4JIndexParam $index_param
+   * @param Neo4JIndexParam $indexParam
    *  Index to locate the new node.
+   * @return \Everyman\Neo4j\Node Created graph node object.
+   * Created graph node object.
    *
-   * @return Node
-   *  Created graph node object.
+   * @throws \Everyman\Neo4j\Exception
+   * @throws \Exception
    */
-  public function addNode(array $properties, array $labels = array(), Neo4JIndexParam $index_param = NULL) {
-    $graph_node = $this->addGraphNode($properties, $index_param);
+  public function addNode(array $properties = array(), array $labels = array(), Neo4JIndexParam $indexParam = NULL) {
+    $graph_node = $this->client->makeNode();
+    $graph_node->setProperties($properties);
+    $graph_node->save();
+
+    if (!$graph_node && !$graph_node->getId()) {
+      throw new \Exception('Graph node has not been created.');
+    }
 
     // Labels.
     $label_objects = array();
@@ -146,30 +154,14 @@ class Neo4JDrupal {
     }
     $graph_node->addLabels($label_objects);
 
-    return $graph_node;
-  }
-
-  /**
-   * Create graph node.
-   *
-   * @param array $properties
-   *  Array of properties.
-   * @param Neo4JIndexParam $indexParam
-   *  Index.
-   * @return Node
-   */
-  public function addGraphNode(array $properties, Neo4JIndexParam $indexParam = NULL) {
-    $node = $this->client->makeNode();
-    $node->setProperties($properties);
-    $node->save();
-
+    // Index.
     if ($indexParam) {
-      $this->getIndex($indexParam->name)->add($node, $indexParam->key, $indexParam->value);
+      $this->getIndex($indexParam->name)->add($graph_node, $indexParam->key, $indexParam->value);
     }
 
-    \Drupal::logger(__CLASS__)->info('Graph node has been created: @id', ['@id' => $node->getId()]);
+    \Drupal::logger(__CLASS__)->info('Graph node has been created: @id', ['@id' => $graph_node->getId()]);
 
-    return $node;
+    return $graph_node;
   }
 
   /**
