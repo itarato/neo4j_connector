@@ -4,6 +4,14 @@ core = 7.x
 
 dependencies[] = entity
 
-files[] = plugin/neo4j_connector.inc
-files[] = plugin/neo4j_connector.handler.inc
+files[] = includes/plugin/Neo4JDrupalRelationEndpointFieldHandler.php
+files[] = includes/plugin/Neo4JDrupalFieldHandlerFactory.php
+files[] = includes/plugin/Neo4JDrupalAbstractFieldHandler.php
+files[] = includes/plugin/Neo4JDrupalSimpleValueFieldHandler.php
+files[] = includes/plugin/Neo4JDrupalReferenceFieldHandler.php
+
+files[] = includes/adapter/Neo4JDrupal.php
+
+files[] = includes/param/Neo4JDrupalIndexParam.php
+
 files[] = tests/neo4j_connector.test

@@ -5,9 +5,10 @@
  */
 
 use Everyman\Neo4j\Client;
+use Everyman\Neo4j\Index;
 use Everyman\Neo4j\Index\NodeIndex;
 use Everyman\Neo4j\Node;
-use Everyman\Neo4j\Cypher\Query;
+use Everyman\Neo4j\Relationship;
 
 /**
  * Class Neo4JDrupal
@@ -51,6 +52,9 @@ class Neo4JDrupal {
   /**
    * Constructor.
    * Use Neo4JDrupal::sharedInstance() instead.
+   * @param \Everyman\Neo4j\Client $client
+   * @param string $node_index_class
+   * @param string $query_class
    */
   public function __construct(Client $client, $node_index_class, $query_class) {
     $this->client = $client;
@@ -63,8 +67,8 @@ class Neo4JDrupal {
    * Use this if you need a special setup.
    *
    * @param Client $client
-   * @param $node_index_class
-   * @param $query_class
+   * @param string $node_index_class
+   * @param string $query_class
    * @return Neo4JDrupal
    */
   public static function createSharedInstance(Client $client, $node_index_class, $query_class) {
@@ -93,6 +97,7 @@ class Neo4JDrupal {
    * @return NodeIndex
    */
   public function getIndex($index_name) {
+    /** @var Index[] $indexes */
     static $indexes = array();
 
     if (!isset($indexes[$index_name])) {
@@ -113,6 +118,7 @@ class Neo4JDrupal {
    * @return \Everyman\Neo4j\Query\ResultSet
    */
   public function query($template, $vars = array()) {
+    /** @var Everyman\Neo4j\Query $query */
     $query = new $this->queryClass($this->client, $template, $vars);
     return $query->getResultSet();
   }
@@ -192,6 +198,7 @@ class Neo4JDrupal {
    */
   public function deleteRelationships(Neo4JDrupalIndexParam $indexParam) {
     if ($node = $this->getGraphNodeOfIndex($indexParam)) {
+      /** @var Relationship[] $relationships */
       $relationships = $node->getRelationships();
       foreach ($relationships as $relationship) {
         $relationship->delete();
@@ -219,6 +226,7 @@ class Neo4JDrupal {
     $gnode->setProperties($properties);
     $gnode->save();
 
+    /** @var Relationship[] $relationships */
     $relationships = $gnode->getRelationships();
     foreach ($relationships as $relationship) {
       if ($gnode->getId() != $relationship->getProperty(Neo4JDrupal::OWNER)) {
@@ -278,48 +286,6 @@ class Neo4JDrupal {
       return $this->client->getNode($propCont->getId());
     }
     return FALSE;
-  }
-
-}
-
-/**
- * Class Neo4JDrupalIndexParam
- * Defines a unique locator in the graph db. Used to identify Drupal items.
- */
-class Neo4JDrupalIndexParam {
-
-  /**
-   * Name of the index.
-   *
-   * @var string
-   */
-  public $name;
-
-  /**
-   * Key name.
-   *
-   * @var string
-   */
-  public $key;
-
-  /**
-   * Value.
-   *
-   * @var string|number
-   */
-  public $value;
-
-  /**
-   * Constructor.
-   *
-   * @param string $name
-   * @param string $key
-   * @param string $value
-   */
-  public function __construct($name = NULL, $key = NULL, $value = NULL) {
-    $this->name = $name;
-    $this->key = $key;
-    $this->value = $value;
   }
 
 }
