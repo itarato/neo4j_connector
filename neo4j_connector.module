@@ -14,8 +14,6 @@ define('NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX', 'entity_index_');
 define('NEO4J_CONNECTOR_REINDEX_LIMIT', 100);
 
 // Variables.
-define('NEO4J_CONNECTOR_VAR_USERNAME', 'neo4j_connector_username');
-define('NEO4J_CONNECTOR_VAR_PASSWORD', 'neo4j_connector_password');
 define('NEO4J_CONNECTOR_VAR_PORT', 'neo4j_connector_port');
 define('NEO4J_CONNECTOR_VAR_HOST', 'neo4j_connector_host');
 

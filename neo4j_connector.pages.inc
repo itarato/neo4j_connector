@@ -184,18 +184,6 @@ function neo4j_connector_admin_settings_form($form, $form_state) {
     '#default_value' => variable_get(NEO4J_CONNECTOR_VAR_PORT, '7474'),
   );
 
-  $form[NEO4J_CONNECTOR_VAR_USERNAME] = array(
-    '#title' => t('User name'),
-    '#type' => 'textfield',
-    '#default_value' => variable_get(NEO4J_CONNECTOR_VAR_USERNAME),
-  );
-
-  $form[NEO4J_CONNECTOR_VAR_PASSWORD] = array(
-    '#type' => 'password',
-    '#title' => t('Password'),
-    '#default_value' => variable_get(NEO4J_CONNECTOR_VAR_PASSWORD),
-  );
-
   return system_settings_form($form);
 }
 
