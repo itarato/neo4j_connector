@@ -53,7 +53,7 @@ function neo4j_connector_graph_info_page_content($entity_type, $id) {
 
   $info = array();
   $info[] = t('Graph node ID: <strong>@nodeid</strong>', array('@nodeid' => $graph_node->getId()));
-  $data_browser_link = 'http://localhost:7474/webadmin/#/data/search/' . $graph_node->getId() . '/';
+  $data_browser_link = 'http://' . variable_get(NEO4J_CONNECTOR_VAR_HOST) . ':' . variable_get(NEO4J_CONNECTOR_VAR_PORT) . '/webadmin/#/data/search/' . $graph_node->getId() . '/';
   $info[] = t('Data browser link') . ': ' . l($data_browser_link, $data_browser_link);
   $info[] = '<pre>START n=node:' . NEO4J_CONNECTOR_ENTITY_INDEX_PREFIX . $entity_type . '(entity_id="' . $id . '") RETURN n;</pre>';
 
