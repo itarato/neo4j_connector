@@ -45,6 +45,11 @@ class Neo4JDrupal {
   public $queryClass;
 
   /**
+   * @var Neo4JDrupalAdapterFactoryInterface
+   */
+  private static $instanceFactory;
+
+  /**
    * Property name on the relationship that contains the owner graph node's ID.
    */
   const OWNER = 'owner-id';
@@ -63,28 +68,14 @@ class Neo4JDrupal {
   }
 
   /**
-   * Directly creates a shared instance which is used throughout the system.
-   * Use this if you need a special setup.
-   *
-   * @param Client $client
-   * @param string $node_index_class
-   * @param string $query_class
-   * @return Neo4JDrupal
-   */
-  public static function createSharedInstance(Client $client, $node_index_class, $query_class) {
-    self::$sharedInstance = new Neo4JDrupal($client, $node_index_class, $query_class);
-    return self::$sharedInstance;
-  }
-
-  /**
    * Singleton instance. It's the best to use this, unless you want some tricks.
    *
    * @return Neo4JDrupal
    */
   public static function sharedInstance() {
     if (!self::$sharedInstance) {
-      $client = new Client(variable_get('neo4j_connector_host', 'localhost'), variable_get('neo4j_connector_port', '7474'));
-      self::$sharedInstance = new Neo4JDrupal($client, 'Everyman\Neo4j\Index\NodeIndex', 'Everyman\Neo4j\Cypher\Query');
+      $factory = self::getInstanceFactory();
+      self::$sharedInstance = $factory->get();
     }
 
     return self::$sharedInstance;
@@ -286,6 +277,23 @@ class Neo4JDrupal {
       return $this->client->getNode($propCont->getId());
     }
     return FALSE;
+  }
+
+  /**
+   * @return Neo4JDrupalAdapterFactoryInterface
+   */
+  public static function getInstanceFactory() {
+    if (!self::$instanceFactory) {
+      self::$instanceFactory = new Neo4JDrupalDefaultAdapterFactory();
+    }
+    return self::$instanceFactory;
+  }
+
+  /**
+   * @param Neo4JDrupalAdapterFactoryInterface $instanceFactory
+   */
+  public static function setInstanceFactory($instanceFactory) {
+    self::$instanceFactory = $instanceFactory;
   }
 
 }

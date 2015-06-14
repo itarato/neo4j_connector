@@ -172,16 +172,28 @@ function neo4j_connector_admin_settings_form($form, $form_state) {
     drupal_set_message(t('Cannot connect to the Neo4J database. Please, check the connection details.'), 'warning');
   }
 
-  $form['neo4j_connector_host'] = array(
+  $form[NEO4J_CONNECTOR_VAR_HOST] = array(
     '#title' => t('Server host'),
     '#type' => 'textfield',
-    '#default_value' => variable_get('neo4j_connector_host', 'localhost'),
+    '#default_value' => variable_get(NEO4J_CONNECTOR_VAR_HOST, 'localhost'),
   );
 
-  $form['neo4j_connector_port'] = array(
+  $form[NEO4J_CONNECTOR_VAR_PORT] = array(
     '#title' => t('Server port'),
     '#type' => 'textfield',
-    '#default_value' => variable_get('neo4j_connector_port', '7474'),
+    '#default_value' => variable_get(NEO4J_CONNECTOR_VAR_PORT, '7474'),
+  );
+
+  $form[NEO4J_CONNECTOR_VAR_USERNAME] = array(
+    '#title' => t('User name'),
+    '#type' => 'textfield',
+    '#default_value' => variable_get(NEO4J_CONNECTOR_VAR_USERNAME),
+  );
+
+  $form[NEO4J_CONNECTOR_VAR_PASSWORD] = array(
+    '#type' => 'password',
+    '#title' => t('Password'),
+    '#default_value' => variable_get(NEO4J_CONNECTOR_VAR_PASSWORD),
   );
 
   return system_settings_form($form);

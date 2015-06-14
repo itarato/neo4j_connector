@@ -20,11 +20,7 @@ class Neo4JDrupalConnectorTestCase extends DrupalWebTestCase {
 
   public function setUp() {
     parent::setUp('neo4j_connector');
-    $this->neo4j_drupal_connector = Neo4JDrupal::createSharedInstance(
-      new MockNeo4JDrupalClient(),
-      'MockNeo4JDrupalNodeIndex',
-      'MockNeo4JDrupalQuery'
-    );
+    Neo4JDrupal::setInstanceFactory(new Neo4JDrupalTestFactory());
   }
 
   public function testGraphNodeCreatedAndIndexed() {

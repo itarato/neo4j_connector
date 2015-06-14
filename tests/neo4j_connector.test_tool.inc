@@ -68,3 +68,14 @@ class MockNeo4JDrupalNode extends Node {
 class MockNeo4JDrupalQuery extends Query {
 
 }
+
+class Neo4JDrupalTestFactory implements Neo4JDrupalAdapterFactoryInterface {
+
+  /**
+   * @return Neo4JDrupal
+   */
+  public function get() {
+    return new Neo4JDrupal(new MockNeo4JDrupalClient(), 'MockNeo4JDrupalNodeIndex', 'MockNeo4JDrupalQuery');
+  }
+
+}

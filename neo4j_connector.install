@@ -52,3 +52,10 @@ function neo4j_connector_schema() {
     ),
   );
 }
+
+/**
+ * Apply new file structure.
+ */
+function neo4j_connector_update_7000() {
+  registry_rebuild();
+}

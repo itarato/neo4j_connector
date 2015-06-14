@@ -14,4 +14,7 @@ files[] = includes/adapter/Neo4JDrupal.php
 
 files[] = includes/param/Neo4JDrupalIndexParam.php
 
+files[] = includes/factory/Neo4JDrupalAdapterFactoryInterface.php
+files[] = includes/factory/Neo4JDrupalDefaultAdapterFactory.php
+
 files[] = tests/neo4j_connector.test
