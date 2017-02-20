@@ -1,5 +1,5 @@
 {
-  "name": "Neo4J Drupal connector",
+  "name": "itarato/neo4jconnector",
   "description": "Neo4J connector module for Neo4J",
   "require": {
     "everyman/neo4jphp": "dev-master",

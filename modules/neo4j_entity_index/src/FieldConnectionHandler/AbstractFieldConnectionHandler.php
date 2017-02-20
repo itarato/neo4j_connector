@@ -12,7 +12,6 @@ use Drupal\field\FieldConfigInterface;
 use Drupal\neo4j_connector\Neo4JDrupal;
 use Drupal\neo4j_connector\Neo4JIndexParam;
 use Everyman\Neo4j\Node;
-use Exception;
 
 /**
  * Class AbstractFieldConnectionHandler
