@@ -4,7 +4,6 @@
  * Entity index handlers.
  */
 
-use Drupal;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\neo4j_connector\Neo4JIndexParam;
