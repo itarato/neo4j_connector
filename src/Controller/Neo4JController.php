@@ -9,7 +9,6 @@ namespace Drupal\neo4j_connector\Controller;
 use Drupal;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Url;
-use Everyman\Neo4j\Client;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class Neo4JController extends ControllerBase {
