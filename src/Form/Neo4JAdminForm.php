@@ -25,7 +25,7 @@ class Neo4JAdminForm extends ConfigFormBase {
       '#title' => t('Server host'),
       '#type' => 'textfield',
       '#default_value' => $settings->get('host'),
-      '#description' => t('Default host of the Neo4J server. Default is localhost.'),
+      '#description' => t('Default host of the Neo4J server. Default is localhost. For authentication add the credentials to the domain: &lt;username&gt;:&lt;password&gt;@&lt;domain&gt;.'),
     );
 
     $form['port'] = array(
@@ -46,13 +46,24 @@ class Neo4JAdminForm extends ConfigFormBase {
   }
 
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $this->configFactory->get('neo4j_connector.site')
+    $this->configFactory->getEditable('neo4j_connector.site')
       ->set('host', $form_state->getValue('host'))
       ->set('port', $form_state->getValue('port'))
       ->set('index_immediately', $form_state->getValue('index_immediately'))
       ->save();
 
     parent::submitForm($form, $form_state);
+  }
+
+  /**
+   * Gets the configuration names that will be editable.
+   *
+   * @return array
+   *   An array of configuration object names that are editable if called in
+   *   conjunction with the trait's config() method.
+   */
+  protected function getEditableConfigNames() {
+    return ['neo4j_connector.site'];
   }
 
 }

@@ -6,10 +6,10 @@
 
 namespace Drupal\neo4j_connector\Controller;
 
+use Drupal;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Url;
-use Drupal
-\Drupal;
+use Everyman\Neo4j\Client;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class Neo4JController extends ControllerBase {
@@ -27,7 +27,7 @@ class Neo4JController extends ControllerBase {
       drupal_set_message(t('Cannot connect to the Neo4J database. Please, check the connection details.'), 'warning');
     }
 
-    $settings_form = \Drupal::formBuilder()->getForm('Drupal\neo4j_connector\Form\Neo4JAdminForm');
+    $settings_form = Drupal::formBuilder()->getForm('Drupal\neo4j_connector\Form\Neo4JAdminForm');
     return $settings_form;
   }
 
@@ -43,8 +43,8 @@ class Neo4JController extends ControllerBase {
 
     $rows = array();
     foreach ($index_info as $key => $index) {
-      $mark_link = \Drupal::l(t('Mark all for index'), new Url('neo4j_connector.index.purge', ['neo4j_connector_index' => $key]));
-      $setting_path = \Drupal::l(t('settings'), new Url($index['settings path']));
+      $mark_link = Drupal::l(t('Mark all for index'), new Url('neo4j_connector.index.purge', ['neo4j_connector_index' => $key]));
+      $setting_path = Drupal::l(t('settings'), new Url($index['settings path']));
       $rows[] = array(
         $index['label'],
         $mark_link,
@@ -52,8 +52,8 @@ class Neo4JController extends ControllerBase {
       );
     }
 
-    $purge_form = \Drupal::formBuilder()->getForm('Drupal\neo4j_connector\Form\Neo4JPurgeDBForm');
-    $reindex_form = \Drupal::formBuilder()->getForm('Drupal\neo4j_connector\Form\Neo4JIndexForm');
+    $purge_form = Drupal::formBuilder()->getForm('Drupal\neo4j_connector\Form\Neo4JPurgeDBForm');
+    $reindex_form = Drupal::formBuilder()->getForm('Drupal\neo4j_connector\Form\Neo4JIndexForm');
 
     $indexes = array(
       '#theme' => 'table',
