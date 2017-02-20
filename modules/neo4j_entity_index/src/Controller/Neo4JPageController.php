@@ -66,7 +66,7 @@ class Neo4JPageController extends ControllerBase {
 
     $info = array();
     $info[] = t('Graph node ID: <strong>@nodeid</strong>', array('@nodeid' => $graph_node->getId()));
-    $info[] = ['#markup' => '<pre>MATCH (n:node) WHERE n.entity_id = "' . $id . '" RETURN n;</pre>'];
+    $info[] = ['#markup' => '<pre>MATCH (n:' . $entity_type . ') WHERE n.entity_id = "' . $id . '" RETURN n;</pre>'];
 
     return array(
       '#theme' => 'item_list',

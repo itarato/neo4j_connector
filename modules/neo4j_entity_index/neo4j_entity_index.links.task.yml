@@ -1,14 +1,14 @@
 neo4j_entity_index.node_info:
   route_name: neo4j_entity_index.node_info
-  base_route: node.view
+  base_route: entity.node.canonical
   title: 'Graph info'
 
 neo4j_entity_index.user_info:
   route_name: neo4j_entity_index.user_info
-  base_route: user.view
+  base_route: entity.user.canonical
   title: 'Graph info'
 
 neo4j_entity_index.term_info:
   route_name: neo4j_entity_index.term_info
-  base_route: taxonomy.term_page
+  base_route: entity.taxonomy_term.canonical
   title: 'Graph info'
