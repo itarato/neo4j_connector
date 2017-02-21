@@ -8,6 +8,10 @@ namespace Drupal\neo4j_connector\Form;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use \Everyman\Neo4j\Exception as Neo4J_Exception;
+use Everyman\Neo4j\Node;
+use Everyman\Neo4j\Path;
+use Everyman\Neo4j\Query\Row;
+use Everyman\Neo4j\Relationship;
 
 class Neo4JConsoleForm extends FormBase {
 
@@ -32,21 +36,18 @@ class Neo4JConsoleForm extends FormBase {
   public function validateForm(array &$form, FormStateInterface $form_state) { }
 
   public function submitForm(array &$form, FormStateInterface $form_state) {
+    $queryRaw = $form_state->getValue('query');
+
     try {
       $client = neo4j_connector_get_client();
-      $result_set = $client->query($form_state['values']['query']);
+      $result_set = $client->query($queryRaw);
       $rows = $this->extractQueryResult($result_set);
-      if (\Drupal::moduleHandler()->moduleExists('devel')) {
-        dpm($rows);
-      }
+      drupal_set_message(t('Query: @query', ['@query' => $queryRaw]));
+      drupal_set_message(['#markup' => '<pre>' . var_export($rows, TRUE) . '</pre>']);
     }
     catch (Neo4J_Exception $e) {
-      if (\Drupal::moduleHandler()->moduleExists('devel')) {
-        dpm($e);
-      }
-      else {
-        drupal_set_message(t('Unable to execute the query.'));
-      }
+      drupal_set_message(t('Unable to execute the query.'), 'warning');
+      $this->logger(__CLASS__)->warning('Query failed: ' . $queryRaw);
     }
   }
 
@@ -58,19 +59,19 @@ class Neo4JConsoleForm extends FormBase {
     return $rows;
   }
 
-  private function extractQueryRow(\Everyman\Neo4j\Query\Row $row) {
+  private function extractQueryRow(Row $row) {
     $rows = array();
     foreach ($row as $record) {
-      if ($record instanceof \Everyman\Neo4j\Node) {
+      if ($record instanceof Node) {
         $rows[] = $record->getProperties();
       }
-      elseif ($record instanceof \Everyman\Neo4j\Relationship) {
+      elseif ($record instanceof Relationship) {
         $rows[] = $record->getType();
       }
-      elseif ($record instanceof \Everyman\Neo4j\Query\Row) {
+      elseif ($record instanceof Row) {
         $rows[] = $this->extractQueryRow($record);
       }
-      elseif ($record instanceof \Everyman\Neo4j\Path) {
+      elseif ($record instanceof Path) {
         foreach ($record->getNodes() as $node) {
           $rows[] = $node->getProperties();
         }
