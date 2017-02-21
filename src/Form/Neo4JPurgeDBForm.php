@@ -33,8 +33,13 @@ class Neo4JPurgeDBForm extends FormBase {
   }
 
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    neo4j_connector_purge_db();
-    drupal_set_message(t('All relationships and nodes have been deleted.'));
+    try {
+      neo4j_connector_purge_db();
+      drupal_set_message(t('All relationships and nodes have been deleted.'));
+    }
+    catch (\Exception $e) {
+      drupal_set_message(t('Error occurred during purge operation: @error', ['@error' => $e->getMessage()]), 'error');
+    }
   }
 
 }
