@@ -148,11 +148,13 @@ class Neo4JDrupal {
     }
 
     // Labels.
-    $label_objects = array();
-    foreach ($labels as $label_string) {
-      $label_objects[] = new Label($this->client, $label_string);
+    if ($labels) {
+      $label_objects = array();
+      foreach ($labels as $label_string) {
+        $label_objects[] = new Label($this->client, $label_string);
+      }
+      $graph_node->addLabels($label_objects);
     }
-    $graph_node->addLabels($label_objects);
 
     // Index.
     if ($indexParam) {

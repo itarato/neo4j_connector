@@ -208,13 +208,16 @@ class Index {
       return FALSE;
     }
 
-    if ($include_relationships) {
-      \Drupal::moduleHandler()->invokeAll('neo4j_connector_graph_node_update', array($graph_node, $indexItem));
-      $this->markWithStatus($indexItem, self::STATUS_INDEXED);
-    }
-    else {
-      $this->markWithStatus($indexItem, self::STATUS_UPDATE);
-    }
+    // @todo Relationships may be added in a different way - using a configuration defined for the server - and not
+    // automatically by discovering hardcoded ones.
+//
+//    if ($include_relationships) {
+//      \Drupal::moduleHandler()->invokeAll('neo4j_connector_graph_node_update', array($graph_node, $indexItem));
+//      $this->markWithStatus($indexItem, self::STATUS_INDEXED);
+//    }
+//    else {
+//      $this->markWithStatus($indexItem, self::STATUS_UPDATE);
+//    }
 
     return $graph_node;
   }
