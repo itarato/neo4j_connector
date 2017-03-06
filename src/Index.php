@@ -201,7 +201,7 @@ class Index {
 
   public function addNode(IndexItem $indexItem, $include_relationships = self::INCLUDE_RELATIONSHIP) {
     list($index_param, $properties, $labels) = $this->getNodeInfo($indexItem);
-    $graph_node = Neo4JDrupal::sharedInstance()->addNode($properties, $labels, $index_param);
+    $graph_node = Neo4JDrupal::sharedInstance()->updateNode($properties, $labels, $index_param);
 
     if (!$graph_node) {
       \Drupal::logger(__CLASS__)->error('Graph node could not be created. Index: @index', ['@index' => $indexItem->getDomain()]);

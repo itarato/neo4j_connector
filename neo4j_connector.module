@@ -141,3 +141,11 @@ function neo4j_connector_index_info() {
 
   return $index_info;
 }
+
+function neo4j_connector_get_server_mapping_configuration() {
+  return [
+    'field_tags:entity:tid' => 'taxonomy_term',
+    'uid:entity:uid' => 'user',
+    'field_page_reference' => 'node',
+  ];
+}

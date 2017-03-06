@@ -18,7 +18,7 @@ class BasicField extends AbstractFieldConnectionHandler {
       $properties = $this->getFieldValueProperties($field_value);
       $labels = $this->getFieldValueLabels($field_value);
       try {
-        $fieldValueNode = neo4j_connector_get_client()->addNode($properties, $labels, $index);
+        $fieldValueNode = neo4j_connector_get_client()->updateNode($properties, $labels, $index);
       } catch (\Exception $e) {
         Drupal::logger(__CLASS__)
           ->error('Node was not created: ' . $e->getMessage());

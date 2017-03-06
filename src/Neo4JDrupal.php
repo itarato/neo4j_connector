@@ -6,6 +6,7 @@
 
 namespace Drupal\neo4j_connector;
 
+use Drupal\Core\Entity\Entity;
 use Everyman\Neo4j\Client;
 use Everyman\Neo4j\Index\NodeIndex;
 use Everyman\Neo4j\Label;
@@ -138,12 +139,19 @@ class Neo4JDrupal {
    * @throws \Everyman\Neo4j\Exception
    * @throws \Exception
    */
-  public function addNode(array $properties = array(), array $labels = array(), Neo4JIndexParam $indexParam = NULL) {
-    $graph_node = $this->client->makeNode();
-    $graph_node->setProperties($properties);
-    $graph_node->save();
+  public function updateNode(array $properties = array(), array $labels = array(), Neo4JIndexParam $indexParam = NULL) {
+    if (!($graphNode = $this->getGraphNodeOfIndex($indexParam))) {
+      $isNew = TRUE;
+      $graphNode = $this->client->makeNode();
+    }
+    else {
+      $isNew = FALSE;
+    }
 
-    if (!$graph_node && !$graph_node->getId()) {
+    $graphNode->setProperties($properties);
+    $graphNode->save();
+
+    if (!$graphNode || !$graphNode->getId()) {
       throw new \Exception('Graph node has not been created.');
     }
 
@@ -153,17 +161,24 @@ class Neo4JDrupal {
       foreach ($labels as $label_string) {
         $label_objects[] = new Label($this->client, $label_string);
       }
-      $graph_node->addLabels($label_objects);
+      $graphNode->addLabels($label_objects);
     }
 
     // Index.
-    if ($indexParam) {
-      $this->getIndex($indexParam->name)->add($graph_node, $indexParam->key, $indexParam->value);
+    if ($isNew && $indexParam) {
+      $this->getIndex($indexParam->name)->add($graphNode, $indexParam->key, $indexParam->value);
     }
 
-    \Drupal::logger(__CLASS__)->info('Graph node has been created: @id', ['@id' => $graph_node->getId()]);
+//    $relationships = $graph_node->getRelationships();
+//    foreach ($relationships as $relationship) {
+//      if ($graph_node->getId() != $relationship->getProperty(Neo4JDrupal::OWNER)) {
+//        // The relationship does not belong to the graph node. Keep it.
+//        continue;
+//      }
+//      $relationship->delete();
+//    }
 
-    return $graph_node;
+    return $graphNode;
   }
 
   /**
@@ -198,43 +213,6 @@ class Neo4JDrupal {
   }
 
   /**
-   * Update a graph node.
-   * Removes and reestablish all relationships (fields and references).
-   *
-   * @param array $properties
-   *  Properties to store.
-   * @param $labels
-   * @param Neo4JIndexParam $index_param
-   *  Index.
-   *
-   * @return Node
-   */
-  public function updateNode(array $properties, array $labels = array(), Neo4JIndexParam $index_param = NULL) {
-    // @todo possible duplication of AddNode - wrap it
-    $graph_node = $this->getGraphNodeOfIndex($index_param);
-    $graph_node->setProperties($properties);
-    $graph_node->save();
-
-    // Labels.
-    $label_objects = array();
-    foreach ($labels as $label_string) {
-      $label_objects[] = new Label($this->client, $label_string);
-    }
-    $graph_node->addLabels($label_objects);
-
-    $relationships = $graph_node->getRelationships();
-    foreach ($relationships as $relationship) {
-      if ($graph_node->getId() != $relationship->getProperty(Neo4JDrupal::OWNER)) {
-        // The relationship does not belong to the graph node. Keep it.
-        continue;
-      }
-      $relationship->delete();
-    }
-
-    return $graph_node;
-  }
-
-  /**
    * Fetch the graph node identified by the index.
    *
    * @param Neo4JIndexParam $index_param
@@ -247,6 +225,12 @@ class Neo4JDrupal {
       return $this->client->getNode($prop_cont->getId());
     }
     return FALSE;
+  }
+
+  public function getNodeOrPlaceholder($entityType, $entityId) {
+
+
+    return $node;
   }
 
   /**

@@ -10,6 +10,8 @@ use Drupal\search_api\Annotation\SearchApiBackend;
 use Drupal\search_api\Backend\BackendPluginBase;
 use Drupal\search_api\IndexInterface;
 use Drupal\search_api\Query\QueryInterface;
+use Drupal\search_api\SearchApiException;
+use Exception;
 
 /**
  * Class Neo4JDatabase
@@ -38,23 +40,49 @@ class Neo4JDatabase extends BackendPluginBase implements PluginFormInterface {
    *   Thrown if indexing was prevented by a fundamental configuration error.
    */
   public function indexItems(IndexInterface $index, array $items) {
-    // TODO: Implement indexItems() method.
+    $relationshipMapping = neo4j_connector_get_server_mapping_configuration();
+
     $indexedKeys = [];
     foreach ($items as $indexItemID => $item) {
       $id = $item->getId();
 
-      $properties = [];
+      $properties = ['drupal_id' => $id];
       foreach ($item->getFields() as $field) {
         $values = $field->getValues();
         $prop_id = $field->getPropertyPath();
         $properties[$prop_id] = @$values[0];
       }
 
-      $graphNode = neo4j_connector_get_client()->addNode($properties, [$item->getDatasourceId()], new Neo4JIndexParam('drupal', 'id', $id));
+      // @todo If one index (drupal) is enough, make sure there is only one used and cannot be more.
+      $indexParam = new Neo4JIndexParam('drupal', 'entity_key', $id);
+      $graphNode = neo4j_connector_get_client()->updateNode($properties, [$item->getDatasourceId()], $indexParam);
+
+      foreach ($item->getFields() as $field) {
+        if (!isset($relationshipMapping[$field->getPropertyPath()])) continue;
+        $refEntityType = $relationshipMapping[$field->getPropertyPath()];
+
+        foreach ($field->getValues() as $value) {
+          $refEntity = \Drupal::entityTypeManager()->getStorage($refEntityType)->load($value);
+          $regLangCode = $refEntity->language()->getId();
+          $entity_key = "entity:$refEntityType/$value:$regLangCode";
+          $indexParam = new Neo4JIndexParam('drupal', 'entity_key', $entity_key);
+          if (!($rhsNode = neo4j_connector_get_client()->getGraphNodeOfIndex($indexParam))) {
+            $rhsNode = neo4j_connector_get_client()->updateNode([], [], $indexParam);
+          }
+
+          if (!$rhsNode) {
+            continue;
+          }
+
+          $graphNode->relateTo($rhsNode, $field->getFieldIdentifier())->save();
+        }
+      }
+
       if ($graphNode) {
-        $indexedKeys[] = $indexItemID;
+        $indexedKeys[] = $id;
       }
     }
+
     return $indexedKeys;
   }
 
@@ -70,7 +98,14 @@ class Neo4JDatabase extends BackendPluginBase implements PluginFormInterface {
    *   Thrown if an error occurred while trying to delete the items.
    */
   public function deleteItems(IndexInterface $index, array $item_ids) {
-    // TODO: Implement deleteItems() method.
+    foreach ($item_ids as $item_id) {
+      // Delete outbound rels.
+      neo4j_connector_get_client()->query("MATCH (n)-[r]->() WHERE n.drupal_id = '{id}' DELETE r", ['id' => $item_id]);
+      // Delete inbound rels.
+      neo4j_connector_get_client()->query("MATCH ()-[r]->(n) WHERE n.drupal_id = '{id}' DELETE r", ['id' => $item_id]);
+      // Delete node itself.
+      neo4j_connector_get_client()->query("MATCH (n) WHERE n.drupal_id = '{id}' DELETE n", ['id' => $item_id]);
+    }
   }
 
   /**
@@ -86,8 +121,12 @@ class Neo4JDatabase extends BackendPluginBase implements PluginFormInterface {
    *   Thrown if an error occurred while trying to delete indexed items.
    */
   public function deleteAllIndexItems(IndexInterface $index, $datasource_id = NULL) {
-    // TODO: Implement deleteAllIndexItems() method.
-    neo4j_connector_purge_db();
+    try {
+      neo4j_connector_purge_db();
+    }
+    catch (Exception $e) {
+      throw new SearchApiException($e->getMessage(), $e->getCode(), $e);
+    }
   }
 
   /**
