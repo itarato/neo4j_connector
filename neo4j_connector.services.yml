@@ -2,14 +2,25 @@ services:
   neo4jphp.client:
     class: Everyman\Neo4j\Client
     factory: neo4j_connector.library_factory:create
+
   neo4j_connector.library_factory:
-    class: Drupal\neo4j_connector\Neo4jDrupalLibraryFactory
+    class: Drupal\neo4j_connector\Neo4JDrupalLibraryFactory
+
   neo4j_connector.query_factory:
     class: Drupal\neo4j_connector\Neo4JDrupalQueryFactory
+
   neo4j_connector.index_factory:
     class: Drupal\neo4j_connector\Neo4JDrupalIndexFactory
+
   neo4j_connector:
     class: Drupal\neo4j_connector\Neo4JDrupal
-    arguments: ['@neo4jphp.client', '@neo4j_connector.index_factory', '@neo4j_connector.query_factory']
-  neo4j_connector.index:
-    class: Drupal\neo4j_connector\Index
+    arguments:
+      - @neo4jphp.client
+      - @neo4j_connector.index_factory
+      - @neo4j_connector.query_factory
+
+  neo4j_connector.entity_index_factory:
+    class: Drupal\neo4j_connector\Factory\Neo4JIndexParamFactory
+    arguments:
+      - drupal
+      - entity_key

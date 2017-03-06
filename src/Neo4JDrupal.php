@@ -11,6 +11,7 @@ use Everyman\Neo4j\Client;
 use Everyman\Neo4j\Index\NodeIndex;
 use Everyman\Neo4j\Label;
 use Everyman\Neo4j\Node;
+use Everyman\Neo4j\Relationship;
 
 /**
  * Class Neo4JDrupal
@@ -202,10 +203,13 @@ class Neo4JDrupal {
    *
    * @param Neo4JIndexParam $indexParam
    *  Index.
+   * @param array $types
+   * @param string $dir
+   *  Everyman\Neo4j\Relationship::Direction*
    */
-  public function deleteRelationships(Neo4JIndexParam $indexParam) {
+  public function deleteRelationships(Neo4JIndexParam $indexParam, $types = [], $dir = Relationship::DirectionAll) {
     if ($node = $this->getGraphNodeOfIndex($indexParam)) {
-      $relationships = $node->getRelationships();
+      $relationships = $node->getRelationships($types, $dir);
       foreach ($relationships as $relationship) {
         $relationship->delete();
       }

@@ -63,3 +63,10 @@ function neo4j_connector_get_server_mapping_configuration() {
     'field_page_reference' => 'node',
   ];
 }
+
+/**
+ * @return \Drupal\neo4j_connector\Factory\Neo4JIndexParamFactory
+ */
+function neo4j_connector_entity_index_factory() {
+  return Drupal::service('neo4j_connector.entity_index_factory');
+}

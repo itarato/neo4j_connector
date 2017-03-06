@@ -5,12 +5,12 @@ namespace Drupal\neo4j_connector\Plugin\search_api\backend;
 use Drupal\Core\Annotation\Translation;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Plugin\PluginFormInterface;
-use Drupal\neo4j_connector\Neo4JIndexParam;
 use Drupal\search_api\Annotation\SearchApiBackend;
 use Drupal\search_api\Backend\BackendPluginBase;
 use Drupal\search_api\IndexInterface;
 use Drupal\search_api\Query\QueryInterface;
 use Drupal\search_api\SearchApiException;
+use Everyman\Neo4j\Relationship;
 use Exception;
 
 /**
@@ -41,22 +41,22 @@ class Neo4JDatabase extends BackendPluginBase implements PluginFormInterface {
    */
   public function indexItems(IndexInterface $index, array $items) {
     $relationshipMapping = neo4j_connector_get_server_mapping_configuration();
-
     $indexedKeys = [];
+
     foreach ($items as $indexItemID => $item) {
       $id = $item->getId();
 
-      $properties = ['drupal_id' => $id];
+      $properties = [];
       foreach ($item->getFields() as $field) {
         $values = $field->getValues();
         $prop_id = $field->getPropertyPath();
         $properties[$prop_id] = @$values[0];
       }
 
-      // @todo If one index (drupal) is enough, make sure there is only one used and cannot be more.
-      $indexParam = new Neo4JIndexParam('drupal', 'entity_key', $id);
+      $indexParam = neo4j_connector_entity_index_factory()->create($id);
       $graphNode = neo4j_connector_get_client()->updateNode($properties, [$item->getDatasourceId()], $indexParam);
 
+      neo4j_connector_get_client()->deleteRelationships($indexParam, [], Relationship::DirectionOut);
       foreach ($item->getFields() as $field) {
         if (!isset($relationshipMapping[$field->getPropertyPath()])) continue;
         $refEntityType = $relationshipMapping[$field->getPropertyPath()];
@@ -65,12 +65,13 @@ class Neo4JDatabase extends BackendPluginBase implements PluginFormInterface {
           $refEntity = \Drupal::entityTypeManager()->getStorage($refEntityType)->load($value);
           $regLangCode = $refEntity->language()->getId();
           $entity_key = "entity:$refEntityType/$value:$regLangCode";
-          $indexParam = new Neo4JIndexParam('drupal', 'entity_key', $entity_key);
+          $indexParam = neo4j_connector_entity_index_factory()->create($entity_key);
           if (!($rhsNode = neo4j_connector_get_client()->getGraphNodeOfIndex($indexParam))) {
             $rhsNode = neo4j_connector_get_client()->updateNode([], [], $indexParam);
           }
 
           if (!$rhsNode) {
+            // @todo add logging (and logger to the class).
             continue;
           }
 
@@ -78,9 +79,7 @@ class Neo4JDatabase extends BackendPluginBase implements PluginFormInterface {
         }
       }
 
-      if ($graphNode) {
-        $indexedKeys[] = $id;
-      }
+      if ($graphNode) $indexedKeys[] = $id;
     }
 
     return $indexedKeys;
