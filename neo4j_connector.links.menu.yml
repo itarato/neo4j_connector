@@ -12,13 +12,6 @@ neo4j_connector.settings:
   description: 'General configuration'
   weight: 0
 
-neo4j_connector.index:
-  title: 'Index'
-  route_name: neo4j_connector.index
-  parent: neo4j_connector.admin
-  description: 'Index management'
-  weight: 1
-
 neo4j_connector.console:
   title: 'Cypher console'
   parent: neo4j_connector.admin

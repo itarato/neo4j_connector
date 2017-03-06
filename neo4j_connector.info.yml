@@ -4,3 +4,5 @@ description: 'Provides access to Neo4J database. Handles entity/field replicatio
 package: Neo4J
 core: 8.x
 configure: neo4j_connector.settings
+dependencies:
+  - search_api:search_api
