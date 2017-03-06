@@ -2,9 +2,7 @@
 
 namespace Drupal\neo4j_connector\Plugin\search_api\backend;
 
-use Drupal\Console\Bootstrap\Drupal;
 use Drupal\Core\Annotation\Translation;
-use Drupal\Core\Field\FieldTypePluginManager;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Plugin\PluginFormInterface;
 use Drupal\field\Entity\FieldStorageConfig;
