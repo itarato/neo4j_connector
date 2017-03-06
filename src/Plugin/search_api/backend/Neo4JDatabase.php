@@ -2,9 +2,12 @@
 
 namespace Drupal\neo4j_connector\Plugin\search_api\backend;
 
+use Drupal\Console\Bootstrap\Drupal;
 use Drupal\Core\Annotation\Translation;
+use Drupal\Core\Field\FieldTypePluginManager;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Plugin\PluginFormInterface;
+use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\search_api\Annotation\SearchApiBackend;
 use Drupal\search_api\Backend\BackendPluginBase;
 use Drupal\search_api\IndexInterface;
@@ -48,9 +51,12 @@ class Neo4JDatabase extends BackendPluginBase implements PluginFormInterface {
 
       $properties = [];
       foreach ($item->getFields() as $field) {
-        $values = $field->getValues();
+        if (!($values = $field->getValues())) continue;
+
         $prop_id = $field->getPropertyPath();
-        $properties[$prop_id] = @$values[0];
+        $fieldName = $field->getFieldIdentifier();
+        $fieldDef = FieldStorageConfig::loadByName($item->getDatasource()->getEntityTypeId(), $fieldName);
+        $properties[$prop_id] = $fieldDef && $fieldDef->getCardinality() != 1 ? $values : $values[0];
       }
 
       $indexParam = neo4j_connector_entity_index_factory()->create($id);
