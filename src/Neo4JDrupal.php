@@ -6,6 +6,7 @@
 
 namespace Drupal\neo4j_connector;
 
+use Drupal\Core\Logger\LoggerChannelTrait;
 use Everyman\Neo4j\Client;
 use Everyman\Neo4j\Index\NodeIndex;
 use Everyman\Neo4j\Label;
@@ -17,6 +18,8 @@ use Everyman\Neo4j\Relationship;
  * Main connector to the Neo4J database.
  */
 class Neo4JDrupal {
+
+  use LoggerChannelTrait;
 
   /**
    * Shared instance.
@@ -198,12 +201,14 @@ class Neo4JDrupal {
    *  Everyman\Neo4j\Relationship::Direction*
    */
   public function deleteRelationships(Neo4JIndexParam $indexParam, $types = [], $dir = Relationship::DirectionAll) {
-    if ($node = $this->getGraphNodeOfIndex($indexParam)) {
-      /** @var Relationship[] $relationships */
-      $relationships = $node->getRelationships($types, $dir);
-      foreach ($relationships as $relationship) {
-        $relationship->delete();
-      }
+    if (!($node = $this->getGraphNodeOfIndex($indexParam))) {
+      $this->getLogger(__CLASS__)->warning('Cannot find node for deleting its relationships.');
+    }
+
+    /** @var Relationship[] $relationships */
+    $relationships = $node->getRelationships($types, $dir);
+    foreach ($relationships as $relationship) {
+      $relationship->delete();
     }
   }
 
@@ -212,14 +217,11 @@ class Neo4JDrupal {
    *
    * @param Neo4JIndexParam $index_param
    *  Index parameter.
-   * @return bool|Node
+   * @return Node|NULL
    */
   public function getGraphNodeOfIndex(Neo4JIndexParam $index_param) {
     $prop_cont = $this->getIndex($index_param->name)->findOne($index_param->key, $index_param->value);
-    if ($prop_cont) {
-      return $this->client->getNode($prop_cont->getId());
-    }
-    return FALSE;
+    return $prop_cont ? $this->client->getNode($prop_cont->getId()) : NULL;
   }
 
 }

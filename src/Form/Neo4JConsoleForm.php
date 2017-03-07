@@ -10,6 +10,7 @@ use Drupal\Core\Form\FormStateInterface;
 use \Everyman\Neo4j\Exception as Neo4J_Exception;
 use Everyman\Neo4j\Node;
 use Everyman\Neo4j\Path;
+use Everyman\Neo4j\Query\ResultSet;
 use Everyman\Neo4j\Query\Row;
 use Everyman\Neo4j\Relationship;
 
@@ -51,9 +52,9 @@ class Neo4JConsoleForm extends FormBase {
     }
   }
 
-  private function extractQueryResult(\Everyman\Neo4j\Query\ResultSet $result_set) {
-    $rows = array();
-    for (;$result_set->valid() && ($current = $result_set->current()); $result_set->next()) {
+  private function extractQueryResult(ResultSet $result_set) {
+    for ($rows = array(); $result_set->valid(); $result_set->next()) {
+      if (!($current = $result_set->current())) continue;
       $rows[] = $this->extractQueryRow($current);
     }
     return $rows;
