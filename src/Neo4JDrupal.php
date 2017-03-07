@@ -6,7 +6,6 @@
 
 namespace Drupal\neo4j_connector;
 
-use Drupal\Core\Entity\Entity;
 use Everyman\Neo4j\Client;
 use Everyman\Neo4j\Index\NodeIndex;
 use Everyman\Neo4j\Label;
@@ -170,15 +169,6 @@ class Neo4JDrupal {
       $this->getIndex($indexParam->name)->add($graphNode, $indexParam->key, $indexParam->value);
     }
 
-//    $relationships = $graph_node->getRelationships();
-//    foreach ($relationships as $relationship) {
-//      if ($graph_node->getId() != $relationship->getProperty(Neo4JDrupal::OWNER)) {
-//        // The relationship does not belong to the graph node. Keep it.
-//        continue;
-//      }
-//      $relationship->delete();
-//    }
-
     return $graphNode;
   }
 
@@ -209,6 +199,7 @@ class Neo4JDrupal {
    */
   public function deleteRelationships(Neo4JIndexParam $indexParam, $types = [], $dir = Relationship::DirectionAll) {
     if ($node = $this->getGraphNodeOfIndex($indexParam)) {
+      /** @var Relationship[] $relationships */
       $relationships = $node->getRelationships($types, $dir);
       foreach ($relationships as $relationship) {
         $relationship->delete();
@@ -229,37 +220,6 @@ class Neo4JDrupal {
       return $this->client->getNode($prop_cont->getId());
     }
     return FALSE;
-  }
-
-  public function getNodeOrPlaceholder($entityType, $entityId) {
-
-
-    return $node;
-  }
-
-  /**
-   * @deprecated
-   */
-  public function connectOrCreate(Node $host_node, Neo4JIndexParam $guest_index_param, $index_domain, $index_id, $relation_name) {
-    $guest_node = $this->getGraphNodeOfIndex($guest_index_param);
-
-    if (!$guest_node) {
-      $indexItem = new IndexItem($index_domain, $index_id);
-      $guest_node = neo4j_connector_get_index()->addNode($indexItem, Index::DO_NOT_INCLUDE_RELATIONSHIP);
-    }
-
-    if ($guest_node) {
-      $host_node->relateTo($guest_node, $relation_name)
-        ->setProperty(Neo4JDrupal::OWNER, $host_node->getId())
-        ->save();
-      return $guest_node;
-    }
-
-    \Drupal::logger(__CLASS__)->warning('Unable to connect to reference. Domain: @domain, id: @id.', [
-      '@domain' => $index_domain,
-      '@id' => $index_id,
-    ]);
-    return NULL;
   }
 
 }
