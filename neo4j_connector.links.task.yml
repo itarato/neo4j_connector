@@ -1,0 +1,5 @@
+entity.search_api_index.graph_mapping:
+  route_name: entity.search_api_index.graph_mapping
+  base_route: entity.search_api_index.canonical
+  title: 'Graph mapping'
+  weight: 25
