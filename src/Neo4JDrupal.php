@@ -11,6 +11,7 @@ use Everyman\Neo4j\Client;
 use Everyman\Neo4j\Index\NodeIndex;
 use Everyman\Neo4j\Label;
 use Everyman\Neo4j\Node;
+use Everyman\Neo4j\PropertyContainer;
 use Everyman\Neo4j\Relationship;
 
 /**
@@ -201,7 +202,7 @@ class Neo4JDrupal {
    *  Everyman\Neo4j\Relationship::Direction*
    */
   public function deleteRelationships(Neo4JIndexParam $indexParam, $types = [], $dir = Relationship::DirectionAll) {
-    if (!($node = $this->getGraphNodeOfIndex($indexParam))) {
+    if (!($node = $this->getGraphNodeOfIndex($indexParam)) || !($node instanceof Node)) {
       $this->getLogger(__CLASS__)->warning('Cannot find node for deleting its relationships.');
     }
 
@@ -217,7 +218,7 @@ class Neo4JDrupal {
    *
    * @param Neo4JIndexParam $index_param
    *  Index parameter.
-   * @return Node|NULL
+   * @return PropertyContainer|NULL
    */
   public function getGraphNodeOfIndex(Neo4JIndexParam $index_param) {
     return $this->getIndex($index_param->name)->findOne($index_param->key, $index_param->value);
