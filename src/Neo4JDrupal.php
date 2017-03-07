@@ -220,8 +220,7 @@ class Neo4JDrupal {
    * @return Node|NULL
    */
   public function getGraphNodeOfIndex(Neo4JIndexParam $index_param) {
-    $prop_cont = $this->getIndex($index_param->name)->findOne($index_param->key, $index_param->value);
-    return $prop_cont ? $this->client->getNode($prop_cont->getId()) : NULL;
+    return $this->getIndex($index_param->name)->findOne($index_param->key, $index_param->value);
   }
 
 }

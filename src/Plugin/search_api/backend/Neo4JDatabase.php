@@ -69,12 +69,8 @@ class Neo4JDatabase extends BackendPluginBase implements PluginFormInterface {
    */
   public function deleteItems(IndexInterface $index, array $item_ids) {
     foreach ($item_ids as $item_id) {
-      // Delete outbound rels.
-      neo4j_connector_get_client()->query("MATCH (n)-[r]->() WHERE n.drupal_id = '{id}' DELETE r", ['id' => $item_id]);
-      // Delete inbound rels.
-      neo4j_connector_get_client()->query("MATCH ()-[r]->(n) WHERE n.drupal_id = '{id}' DELETE r", ['id' => $item_id]);
-      // Delete node itself.
-      neo4j_connector_get_client()->query("MATCH (n) WHERE n.drupal_id = '{id}' DELETE n", ['id' => $item_id]);
+      $indexParam = neo4j_connector_entity_index_factory()->create($item_id);
+      neo4j_connector_get_client()->deleteNode($indexParam);
     }
   }
 
