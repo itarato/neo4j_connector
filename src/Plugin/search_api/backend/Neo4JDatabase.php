@@ -135,38 +135,7 @@ class Neo4JDatabase extends BackendPluginBase implements PluginFormInterface {
    *   The form structure.
    */
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
-    // TODO: Implement buildConfigurationForm() method.
-    return [];
-  }
-
-  /**
-   * Form validation handler.
-   *
-   * @param array $form
-   *   An associative array containing the structure of the plugin form as built
-   *   by static::buildConfigurationForm().
-   * @param \Drupal\Core\Form\FormStateInterface $form_state
-   *   The current state of the form. Calling code should pass on a subform
-   *   state created through
-   *   \Drupal\Core\Form\SubformState::createForSubform().
-   */
-  public function validateConfigurationForm(array &$form, FormStateInterface $form_state) {
-    // TODO: Implement validateConfigurationForm() method.
-  }
-
-  /**
-   * Form submission handler.
-   *
-   * @param array $form
-   *   An associative array containing the structure of the plugin form as built
-   *   by static::buildConfigurationForm().
-   * @param \Drupal\Core\Form\FormStateInterface $form_state
-   *   The current state of the form. Calling code should pass on a subform
-   *   state created through
-   *   \Drupal\Core\Form\SubformState::createForSubform().
-   */
-  public function submitConfigurationForm(array &$form, FormStateInterface $form_state) {
-    // TODO: Implement submitConfigurationForm() method.
+    return $form;
   }
 
   public function defaultConfiguration() {
