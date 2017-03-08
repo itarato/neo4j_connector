@@ -42,11 +42,11 @@ class MappingProcessor extends FieldsProcessorPluginBase {
 
     $form[self::KEY_FIELD_MAPPING]['#tree'] = TRUE;
     foreach ($this->getIndex()->getFields() as $field) {
-      $form[self::KEY_FIELD_MAPPING][$field->getPropertyPath()] = [
+      $form[self::KEY_FIELD_MAPPING][$field->getFieldIdentifier()] = [
         '#title' => $field->getLabel(),
         '#type' => 'select',
         '#options' => $options,
-        '#default_value' => @$mapping[$field->getPropertyPath()],
+        '#default_value' => @$mapping[$field->getFieldIdentifier()],
       ];
     }
 

@@ -249,7 +249,7 @@ class Neo4JDatabase extends BackendPluginBase implements PluginFormInterface {
       }
 
       foreach ($item->getFields() as $field) {
-        $sourceFieldKey = $field->getPropertyPath();
+        $sourceFieldKey = $field->getFieldIdentifier();
         if (empty($relationshipMapping[$sourceFieldKey])) {
           continue;
         }
