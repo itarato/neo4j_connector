@@ -8,6 +8,7 @@ use Drupal\Core\Logger\LoggerChannelTrait;
 use Drupal\Core\Plugin\PluginFormInterface;
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\neo4j_connector\Neo4JIndexParam;
+use Drupal\neo4j_connector\Plugin\search_api\processor\MappingProcessor;
 use Drupal\search_api\Annotation\SearchApiBackend;
 use Drupal\search_api\Backend\BackendPluginBase;
 use Drupal\search_api\IndexInterface;
@@ -175,19 +176,13 @@ class Neo4JDatabase extends BackendPluginBase implements PluginFormInterface {
    * @return string
    */
   protected function indexItem(ItemInterface $item) {
-    static $relationshipMapping;
-    if (!$relationshipMapping) $relationshipMapping = neo4j_connector_get_server_mapping_configuration();
-
     $id = $item->getId();
     $indexParam = neo4j_connector_entity_index_factory()->create($id);
 
     $graphNode = $this->createGraphNode($item, $indexParam);
 
     neo4j_connector_get_client()->deleteRelationships($indexParam, [], Relationship::DirectionOut);
-    foreach ($item->getFields() as $field) {
-      if (!isset($relationshipMapping[$field->getPropertyPath()])) continue;
-      $this->createGraphRelationship($relationshipMapping[$field->getPropertyPath()], $field, $graphNode);
-    }
+    $this->makeRelationships($item, $graphNode);
 
     return $graphNode ? $id : NULL;
   }
@@ -239,6 +234,27 @@ class Neo4JDatabase extends BackendPluginBase implements PluginFormInterface {
       $graphNode->relateTo($rhsNode, $field->getFieldIdentifier())->save();
       $this->getLogger(__CLASS__)
         ->notice('Relationship between ' . $graphNode->getId() . ' and ' . $rhsNode->getId() . ' has been established.');
+    }
+  }
+
+  /**
+   * @param \Drupal\search_api\Item\ItemInterface $item
+   * @param Node $graphNode
+   */
+  protected function makeRelationships(ItemInterface $item, $graphNode) {
+    if (($mappingProcessor = $item->getIndex()->getProcessor(MappingProcessor::ID))) {
+      static $relationshipMapping;
+      if (!$relationshipMapping) {
+        $relationshipMapping = $mappingProcessor->getConfiguration()[MappingProcessor::KEY_FIELD_MAPPING];
+      }
+
+      foreach ($item->getFields() as $field) {
+        $sourceFieldKey = $field->getPropertyPath();
+        if (empty($relationshipMapping[$sourceFieldKey])) {
+          continue;
+        }
+        $this->createGraphRelationship($relationshipMapping[$sourceFieldKey], $field, $graphNode);
+      }
     }
   }
 

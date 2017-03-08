@@ -21,11 +21,3 @@ neo4j_connector.console:
     _form: 'Drupal\neo4j_connector\Form\Neo4JConsoleForm'
   requirements:
     _permission: 'administer neo4j connector configuration'
-
-entity.search_api_index.graph_mapping:
-  path: '/admin/config/search/search-api/index/{search_api_index}/graph_mapping'
-  defaults:
-    _title: 'Neo4J Cypher query console'
-    _form: 'Drupal\neo4j_connector\Form\GraphMappingForm'
-  requirements:
-    _permission: 'administer neo4j connector configuration'
