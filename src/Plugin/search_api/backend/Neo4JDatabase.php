@@ -14,6 +14,7 @@ use Drupal\search_api\Backend\BackendPluginBase;
 use Drupal\search_api\IndexInterface;
 use Drupal\search_api\Item\FieldInterface;
 use Drupal\search_api\Item\ItemInterface;
+use Drupal\search_api\Plugin\PluginFormTrait;
 use Drupal\search_api\Query\QueryInterface;
 use Drupal\search_api\SearchApiException;
 use Everyman\Neo4j\Node;
@@ -33,6 +34,7 @@ use Exception;
 class Neo4JDatabase extends BackendPluginBase implements PluginFormInterface {
 
   use LoggerChannelTrait;
+  use PluginFormTrait;
 
   /**
    * Indexes the specified items.
