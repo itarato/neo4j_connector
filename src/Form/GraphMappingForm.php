@@ -1,8 +1,8 @@
 <?php
 
-
 namespace Drupal\neo4j_connector\Form;
 
+use Drupal\Core\Entity\ContentEntityType;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\search_api\Entity\Index;
@@ -31,11 +31,18 @@ class GraphMappingForm extends FormBase {
    *   The form structure.
    */
   public function buildForm(array $form, FormStateInterface $form_state, Index $search_api_index = NULL) {
+    $options = ['' => t('- no mapping -')];
+    foreach (\Drupal::entityTypeManager()->getDefinitions() as $entityDefinition) {
+      if (!($entityDefinition instanceof ContentEntityType)) continue;
+      $options[$entityDefinition->id()] = $entityDefinition->getLabel();
+    }
+
     $form['fields']['#tree'] = TRUE;
     foreach ($search_api_index->getFields() as $field) {
       $form['fields'][$field->getPropertyPath()] = [
         '#title' => $field->getLabel(),
-        '#type' => 'textfield',
+        '#type' => 'select',
+        '#options' => $options,
       ];
     }
 
